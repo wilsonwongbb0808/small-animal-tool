@@ -1,0 +1,165 @@
+{
+  "generatedAt": "2026/6/8 22:34:38",
+  "expect": "2026159",
+  "openTime": "2026-06-08 21:32:32",
+  "actual": {
+    "openCode": [
+      "12",
+      "04",
+      "28",
+      "17",
+      "20",
+      "46",
+      "39"
+    ],
+    "waves": [
+      "red",
+      "blue",
+      "green",
+      "green",
+      "blue",
+      "red",
+      "green"
+    ],
+    "normalNumbers": [
+      "12",
+      "04",
+      "28",
+      "17",
+      "20",
+      "46"
+    ],
+    "special": "39",
+    "normalZodiacs": [
+      "羊",
+      "兔",
+      "兔",
+      "虎",
+      "豬",
+      "雞"
+    ],
+    "specialZodiac": "龍",
+    "specialWave": "green"
+  },
+  "predicted": {
+    "specialTop10": [
+      {
+        "number": 30,
+        "code": "30",
+        "score": 115.3,
+        "zodiac": "牛",
+        "wave": "red"
+      },
+      {
+        "number": 41,
+        "code": "41",
+        "score": 102.7,
+        "zodiac": "虎",
+        "wave": "blue"
+      },
+      {
+        "number": 7,
+        "code": "07",
+        "score": 102,
+        "zodiac": "鼠",
+        "wave": "red"
+      },
+      {
+        "number": 16,
+        "code": "16",
+        "score": 100,
+        "zodiac": "兔",
+        "wave": "green"
+      },
+      {
+        "number": 37,
+        "code": "37",
+        "score": 82.7,
+        "zodiac": "馬",
+        "wave": "blue"
+      },
+      {
+        "number": 21,
+        "code": "21",
+        "score": 80,
+        "zodiac": "狗",
+        "wave": "green"
+      },
+      {
+        "number": 32,
+        "code": "32",
+        "score": 80,
+        "zodiac": "豬",
+        "wave": "green"
+      },
+      {
+        "number": 47,
+        "code": "47",
+        "score": 80,
+        "zodiac": "猴",
+        "wave": "blue"
+      },
+      {
+        "number": 49,
+        "code": "49",
+        "score": 80,
+        "zodiac": "馬",
+        "wave": "green"
+      },
+      {
+        "number": 44,
+        "code": "44",
+        "score": 76.7,
+        "zodiac": "豬",
+        "wave": "green"
+      }
+    ],
+    "zodiacFive": [
+      {
+        "zodiac": "雞",
+        "normalNumber": "46",
+        "wave": "red",
+        "score": 487
+      },
+      {
+        "zodiac": "豬",
+        "normalNumber": "20",
+        "wave": "blue",
+        "score": 480.4
+      },
+      {
+        "zodiac": "馬",
+        "normalNumber": "49",
+        "wave": "green",
+        "score": 467.3
+      },
+      {
+        "zodiac": "牛",
+        "normalNumber": "42",
+        "wave": "blue",
+        "score": 405.2
+      },
+      {
+        "zodiac": "虎",
+        "normalNumber": "17",
+        "wave": "green",
+        "score": 389.4
+      }
+    ]
+  },
+  "result": {
+    "specialHit": false,
+    "zodiacMatchedCount": 3,
+    "zodiacMatches": [
+      "雞",
+      "豬",
+      "虎"
+    ],
+    "normalNumberMatchedCount": 3,
+    "normalNumberMatches": [
+      "46",
+      "20",
+      "17"
+    ]
+  }
+}
