@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026/6/9 22:59:35",
+  "generatedAt": "2026/6/10 00:13:20",
   "expect": "2026160",
   "openTime": "2026-06-09 21:32:32",
   "actual": {
@@ -256,6 +256,43 @@
         "wave": "green"
       }
     ],
+    "normalHit3Five": [
+      {
+        "number": 7,
+        "code": "07",
+        "score": 117.05,
+        "zodiac": "鼠",
+        "wave": "red"
+      },
+      {
+        "number": 8,
+        "code": "08",
+        "score": 105.19,
+        "zodiac": "豬",
+        "wave": "red"
+      },
+      {
+        "number": 17,
+        "code": "17",
+        "score": 91.82,
+        "zodiac": "虎",
+        "wave": "green"
+      },
+      {
+        "number": 38,
+        "code": "38",
+        "score": 89.26,
+        "zodiac": "蛇",
+        "wave": "green"
+      },
+      {
+        "number": 46,
+        "code": "46",
+        "score": 88.15,
+        "zodiac": "雞",
+        "wave": "red"
+      }
+    ],
     "zodiacFive": [
       {
         "zodiac": "雞",
@@ -298,6 +335,10 @@
       "豬"
     ],
     "normalNumberMatchedCount": 0,
-    "normalNumberMatches": []
+    "normalNumberMatches": [],
+    "normalHit3MatchedCount": 1,
+    "normalHit3Matches": [
+      "08"
+    ]
   }
 }
