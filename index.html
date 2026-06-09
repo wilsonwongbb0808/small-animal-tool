@@ -3,15 +3,15 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>六合彩本地蒙特卡洛预测工具</title>
+    <title>每日小动物</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <header class="app-header">
       <div>
         <p class="eyebrow">Local Monte Carlo Analytics</p>
-        <h1>六合彩本地蒙特卡洛预测工具</h1>
-        <p class="subhead">读取本地历史开奖数据库，每次点击预测都会重新运行蒙特卡洛模拟。</p>
+        <h1>每日小动物</h1>
+        <p class="subhead">读取本地历史开奖数据库，支持统计预测、玄学特码预测、号码分析与开奖复盘。</p>
       </div>
       <div class="status-panel">
         <span id="connectionStatus" class="status-dot"></span>
@@ -23,15 +23,23 @@
       <section class="toolbar" aria-label="预测控制">
         <label>
           模拟次数
-          <input id="simulationInput" type="number" min="1000" max="200000" step="1000" value="50000" />
+          <input id="simulationInput" type="number" min="1000" max="200000" step="1000" value="100000" />
         </label>
-        <button id="loadBtn" type="button">读取本地数据库</button>
-        <button id="updateBtn" type="button">立即更新开奖</button>
         <button id="predictBtn" type="button">开始预测</button>
+        <div class="toolbar-meta">
+          <span>最后更新</span>
+          <strong id="lastUpdatedAt">-</strong>
+        </div>
       </section>
 
+      <nav class="page-tabs" aria-label="功能页面">
+        <button class="tab-button active" type="button" data-page="statsPage">统计预测</button>
+        <button class="tab-button" type="button" data-page="mysticPage">玄学预测</button>
+        <button class="tab-button" type="button" data-page="externalPage">号码分析</button>
+      </nav>
+
       <section class="notice">
-        <strong>提示：</strong>彩票开奖具有随机性，蒙特卡洛模拟只能给出历史数据下的概率参考，不保证命中。
+        <strong>提示：</strong>彩票开奖具有随机性，所有统计与玄学模拟都只作娱乐参考，不保证命中。
       </section>
 
       <section class="summary-grid">
@@ -44,70 +52,163 @@
           <strong id="latestExpect">-</strong>
         </article>
         <article class="metric">
-          <span>最新特码</span>
-          <strong id="latestSpecial">-</strong>
-        </article>
-        <article class="metric">
           <span>模拟次数</span>
           <strong id="simulationCount">-</strong>
         </article>
-        <article class="metric">
-          <span>最后更新</span>
-          <strong id="lastUpdatedAt">-</strong>
-        </article>
       </section>
 
-      <section class="main-column">
-        <section class="panel">
-          <div class="panel-title">
-            <h2>模拟后结果</h2>
-            <span id="predictionTime">等待预测</span>
+      <section id="statsPage" class="page-section active">
+        <section class="main-column">
+          <section class="panel">
+            <div class="panel-title">
+              <h2>模拟后结果</h2>
+              <span id="predictionTime">等待预测</span>
+            </div>
+            <div id="simulationResult" class="summary-picks"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-title">
+              <h2>10码中特</h2>
+              <span>每次推荐 10 个特码</span>
+            </div>
+            <div id="specialRecommendations" class="special-grid"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-title">
+              <h2>20码中特</h2>
+              <span>同模型推荐 20 个数字</span>
+            </div>
+            <div id="special20Recommendations" class="draw-balls"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-title">
+              <h2>五肖推荐</h2>
+              <span>推荐 5 组：每组一个生肖 + 一个对应平码</span>
+            </div>
+            <div id="zodiacRecommendations" class="zodiac-picks"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-title">
+              <h2>开奖复盘</h2>
+              <span id="reviewTime">等待更新开奖后生成</span>
+            </div>
+            <div id="reviewPanel" class="review-panel"></div>
+          </section>
+
+          <section class="panel history-panel">
+            <div class="panel-title">
+              <h2>历史开奖</h2>
+              <span>显示最近 20 期，点击号码查看生肖</span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>期号</th>
+                    <th>日期</th>
+                    <th>开奖号码</th>
+                    <th>特码属性</th>
+                  </tr>
+                </thead>
+                <tbody id="recentRows"></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+      </section>
+
+      <section id="mysticPage" class="page-section">
+        <section class="main-column">
+          <section class="panel">
+            <div class="panel-title">
+              <h2>玄学预测</h2>
+              <span>分别模拟特码与平码，整合生肖五行、周易、梅花、数秘、九宫及历史模型</span>
+            </div>
+            <div class="mystic-controls">
+              <label>
+                目标开奖日期
+                <input id="mysticTargetTime" type="date" />
+              </label>
+              <label>
+                玄学模拟次数
+                <input id="mysticSimInput" type="number" min="1000" max="300000" step="1000" value="100000" />
+              </label>
+              <button id="mysticPredictBtn" type="button">运行玄学模拟</button>
+            </div>
+            <div id="mysticTimeInfo" class="mystic-time-info">读取历史开奖后自动推算下一期开奖日期</div>
+            <div class="mystic-result-section">
+              <div class="panel-title compact">
+                <h2>玄学特码推荐</h2>
+                <span>推荐 7 个特码</span>
+              </div>
+              <div id="mysticSpecialResults" class="special-grid"></div>
+            </div>
+            <div class="mystic-result-section">
+              <div class="panel-title compact">
+                <h2>玄学平码推荐</h2>
+                <span>统计五肖 × 玄学模型，每肖推荐 1 个平码</span>
+              </div>
+              <div id="mysticNormalResults" class="special-grid"></div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-title">
+              <h2>玄学方法拆解</h2>
+              <span>每种方法提供候选号码，再分别叠加特码模型和平码模型进行蒙特卡洛整合</span>
+            </div>
+            <div id="mysticMethodList" class="method-grid"></div>
+          </section>
+        </section>
+      </section>
+
+      <section id="externalPage" class="page-section">
+        <section id="externalAccessGate" class="panel access-gate">
+          <div>
+            <h2>号码分析</h2>
+            <p>请输入访问密码后进入。</p>
           </div>
-          <div id="simulationResult" class="summary-picks"></div>
+          <div class="access-gate-controls">
+            <input id="externalPasswordInput" type="password" autocomplete="current-password" placeholder="访问密码" />
+            <button id="externalUnlockBtn" type="button">进入</button>
+          </div>
+          <div id="externalPasswordError" class="save-status"></div>
         </section>
 
-        <section class="panel">
-          <div class="panel-title">
-            <h2>特码推荐</h2>
-            <span>每次至少推荐 10 个特码</span>
-          </div>
-          <div id="specialRecommendations" class="special-grid"></div>
-        </section>
+        <section id="externalProtectedContent" class="main-column" hidden>
+          <section class="panel">
+            <div class="panel-title">
+              <h2>号码分析</h2>
+              <span>粘贴别人看好的特码，分析他可能为什么选这些号</span>
+            </div>
+            <textarea id="externalNumbersInput" class="number-input-area" placeholder="例如：01 03 07 12 16 20 23 24 27 30 31 33 37 39 40 41 43 45 46 48 49"></textarea>
+            <div class="analysis-actions">
+              <button id="analyzeExternalBtn" type="button">分析这组号码</button>
+              <button id="saveExternalBtn" type="button">保存到历史复盘</button>
+            </div>
+            <div id="externalSaveStatus" class="save-status"></div>
+            <div id="externalSummary" class="external-summary"></div>
+          </section>
 
-        <section class="panel">
-          <div class="panel-title">
-            <h2>生肖推荐</h2>
-            <span>推荐 5 组：每组一个生肖 + 一个对应平码</span>
-          </div>
-          <div id="zodiacRecommendations" class="zodiac-picks"></div>
-        </section>
+          <section class="panel">
+            <div class="panel-title">
+              <h2>逐号理由</h2>
+              <span>根据历史开奖、遗漏、近期热度、生肖、波色和模型重合度解释</span>
+            </div>
+            <div id="externalNumberAnalysis" class="analysis-grid"></div>
+          </section>
 
-        <section class="panel">
-          <div class="panel-title">
-            <h2>开奖复盘</h2>
-            <span id="reviewTime">等待更新开奖后生成</span>
-          </div>
-          <div id="reviewPanel" class="review-panel"></div>
-        </section>
-
-        <section class="panel history-panel">
-          <div class="panel-title">
-            <h2>历史开奖</h2>
-            <span>显示最近 20 期，最后一位为特码</span>
-          </div>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>期号</th>
-                  <th>日期</th>
-                  <th>开奖号码</th>
-                  <th>特码属性</th>
-                </tr>
-              </thead>
-              <tbody id="recentRows"></tbody>
-            </table>
-          </div>
+          <section class="panel">
+            <div class="panel-title">
+              <h2>历史号码复盘</h2>
+              <span>外层显示号码，展开查看整体理由</span>
+            </div>
+            <div id="externalHistoryAnalysis" class="history-analysis-list"></div>
+          </section>
         </section>
       </section>
     </main>
