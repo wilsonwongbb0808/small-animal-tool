@@ -54,15 +54,22 @@ function New-GitBlob {
   Invoke-GitHubApi -Method "Post" -Uri "https://api.github.com/repos/$Owner/$Repo/git/blobs" -Body $body
 }
 
-function Test-OnlineMarker {
+function Test-OnlineFiles {
   param([string]$Url)
 
   try {
     $cacheBust = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
     $base = $Url.TrimEnd("/")
-    $index = (Invoke-WebRequest -UseBasicParsing -Uri "$base/index.html?v=$cacheBust" -TimeoutSec 20).Content
-    $app = (Invoke-WebRequest -UseBasicParsing -Uri "$base/app.js?v=$cacheBust" -TimeoutSec 20).Content
-    return ($index -like "*三中三推荐*" -and $app -like "*暂未预测*")
+    $checkFiles = @("index.html", "app.js", "styles.css", "data/latest-review.json")
+    foreach ($file in $checkFiles) {
+      $tmp = Join-Path ([IO.Path]::GetTempPath()) ("gh-pages-check-" + [guid]::NewGuid().ToString("N") + ".tmp")
+      Invoke-WebRequest -UseBasicParsing -Uri "$base/$($file)?v=$cacheBust" -OutFile $tmp -TimeoutSec 30
+      $localHash = (Get-FileHash -Algorithm SHA256 -Path $file).Hash
+      $onlineHash = (Get-FileHash -Algorithm SHA256 -Path $tmp).Hash
+      Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue
+      if ($localHash -ne $onlineHash) { return $false }
+    }
+    return $true
   } catch {
     return $false
   }
@@ -145,7 +152,7 @@ do {
   Write-Host $lastStatus
 
   if ($run.status -eq "completed" -and $run.conclusion -eq "success") {
-    if (Test-OnlineMarker -Url $PageUrl) {
+    if (Test-OnlineFiles -Url $PageUrl) {
       Write-Host "Done. Online page updated: $PageUrl" -ForegroundColor Green
       exit 0
     }
