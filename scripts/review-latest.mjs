@@ -8,13 +8,13 @@ const reviewFile = path.join(root, "data", "latest-review.json");
 const NUMBERS = Array.from({ length: 49 }, (_, index) => index + 1);
 const SPECIAL_MODEL = {
   limit: 120,
-  recentLimit: 45,
-  weights: { frequency: 0, recent: 100, miss: 80 },
+  recentLimit: 50,
+  weights: { frequency: 45, recent: 100, miss: 45 },
 };
 const ZODIAC_MODEL = {
   limit: 240,
-  recentLimit: 60,
-  weights: { frequency: 120, recent: 15, miss: 30, carry: 0 },
+  recentLimit: 50,
+  weights: { frequency: 45, recent: 110, miss: 25, carry: 0 },
 };
 
 function parseDraw(raw) {
@@ -42,12 +42,19 @@ function makeCounter() {
   return Object.fromEntries(NUMBERS.map((number) => [number, 0]));
 }
 
-function add(counter, key) {
-  counter[key] = (counter[key] || 0) + 1;
+function add(counter, key, amount = 1) {
+  counter[key] = (counter[key] || 0) + amount;
 }
 
 function normalize(value, max) {
   return max > 0 ? value / max : 0;
+}
+
+function drawAgeWeight(index) {
+  if (index < 50) {
+    return 5 - (index / 49) * 2.5;
+  }
+  return Math.max(0.08, 0.35 * Math.exp(-(index - 50) / 70));
 }
 
 function numberMiss(draws, selector) {
@@ -71,23 +78,23 @@ function buildMeta(draws) {
   return meta;
 }
 
-function rankSpecial(train, meta) {
+function rankSpecial(train, meta, limit = 10) {
   const sample = train.slice(0, SPECIAL_MODEL.limit);
   const recent = sample.slice(0, Math.min(SPECIAL_MODEL.recentLimit, sample.length));
-  const counts = makeCounter();
+  const weightedCounts = makeCounter();
   const recentCounts = makeCounter();
   const miss = numberMiss(sample, (draw) => [draw.special]);
 
-  sample.forEach((draw) => add(counts, draw.special));
+  sample.forEach((draw, index) => add(weightedCounts, draw.special, drawAgeWeight(index)));
   recent.forEach((draw) => add(recentCounts, draw.special));
 
-  const maxCount = Math.max(...Object.values(counts), 1);
+  const maxCount = Math.max(...Object.values(weightedCounts), 1);
   const maxRecent = Math.max(...Object.values(recentCounts), 1);
   const maxMiss = Math.max(...Object.values(miss), 1);
 
   return NUMBERS.map((number) => {
     const score =
-      normalize(counts[number], maxCount) * SPECIAL_MODEL.weights.frequency +
+      normalize(weightedCounts[number], maxCount) * SPECIAL_MODEL.weights.frequency +
       normalize(recentCounts[number], maxRecent) * SPECIAL_MODEL.weights.recent +
       normalize(miss[number], maxMiss) * SPECIAL_MODEL.weights.miss;
     return {
@@ -99,21 +106,21 @@ function rankSpecial(train, meta) {
     };
   })
     .sort((a, b) => b.score - a.score || a.number - b.number)
-    .slice(0, 10);
+    .slice(0, limit);
 }
 
 function rankZodiac(train, meta) {
   const sample = train.slice(0, ZODIAC_MODEL.limit);
   const recent = sample.slice(0, Math.min(ZODIAC_MODEL.recentLimit, sample.length));
-  const counts = makeCounter();
+  const weightedCounts = makeCounter();
   const recentCounts = makeCounter();
   const miss = numberMiss(sample, (draw) => draw.normal);
   const carryZodiacs = new Set(sample[0]?.zodiacs.slice(0, 6) || []);
 
-  sample.forEach((draw) => draw.normal.forEach((number) => add(counts, number)));
+  sample.forEach((draw, index) => draw.normal.forEach((number) => add(weightedCounts, number, drawAgeWeight(index))));
   recent.forEach((draw) => draw.normal.forEach((number) => add(recentCounts, number)));
 
-  const maxCount = Math.max(...Object.values(counts), 1);
+  const maxCount = Math.max(...Object.values(weightedCounts), 1);
   const maxRecent = Math.max(...Object.values(recentCounts), 1);
   const maxMiss = Math.max(...Object.values(miss), 1);
   const zodiacScores = {};
@@ -123,7 +130,7 @@ function rankZodiac(train, meta) {
     const zodiac = meta[number]?.zodiac || "";
     if (!zodiac) continue;
     const score =
-      normalize(counts[number], maxCount) * ZODIAC_MODEL.weights.frequency +
+      normalize(weightedCounts[number], maxCount) * ZODIAC_MODEL.weights.frequency +
       normalize(recentCounts[number], maxRecent) * ZODIAC_MODEL.weights.recent +
       normalize(miss[number], maxMiss) * ZODIAC_MODEL.weights.miss +
       (carryZodiacs.has(zodiac) ? ZODIAC_MODEL.weights.carry : 0);
@@ -150,11 +157,13 @@ export async function createLatestReview() {
   const actual = draws[0];
   const train = draws.filter((draw) => draw.expect < actual.expect);
   const meta = buildMeta(train);
-  const specialPicks = rankSpecial(train, meta);
+  const specialTop20 = rankSpecial(train, meta, 20);
+  const specialPicks = specialTop20.slice(0, 10);
   const zodiacPicks = rankZodiac(train, meta);
   const actualNormalZodiacs = actual.zodiacs.slice(0, 6);
   const actualNormalSet = new Set(actual.normal);
   const specialHit = specialPicks.some((pick) => pick.number === actual.special);
+  const specialTop20Hit = specialTop20.some((pick) => pick.number === actual.special);
   const zodiacMatches = zodiacPicks.filter((pick) => actualNormalZodiacs.includes(pick.zodiac)).map((pick) => pick.zodiac);
   const normalNumberMatches = zodiacPicks
     .filter((pick) => actualNormalSet.has(pick.normalNumber.number))
@@ -175,6 +184,7 @@ export async function createLatestReview() {
     },
     predicted: {
       specialTop10: specialPicks,
+      specialTop20: specialTop20.slice().sort((a, b) => a.number - b.number),
       zodiacFive: zodiacPicks.map((pick) => ({
         zodiac: pick.zodiac,
         normalNumber: pick.normalNumber.code,
@@ -184,6 +194,7 @@ export async function createLatestReview() {
     },
     result: {
       specialHit,
+      specialTop20Hit,
       zodiacMatchedCount: zodiacMatches.length,
       zodiacMatches,
       normalNumberMatchedCount: normalNumberMatches.length,
