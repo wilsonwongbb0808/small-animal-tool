@@ -11,11 +11,26 @@ const ZODIAC_MODEL = {
   recentLimit: 50,
   weights: { frequency: 45, recent: 110, miss: 25, carry: 0 },
 };
+const NORMAL_HIT3_MODEL = {
+  limit: 120,
+  weights: {
+    rc10: -10.037,
+    rc30: -10.815,
+    rc50: 0.824,
+    rc80: 1.212,
+    wm15: -13.505,
+    wm30: -1.449,
+    wm50: 2.496,
+    wm80: 13.866,
+    prevAny: 6.36,
+  },
+};
 
 const state = {
   draws: [],
   analysis: null,
   prediction: null,
+  mysticPrediction: null,
   externalAnalysis: null,
 };
 
@@ -393,6 +408,54 @@ function numberMiss(draws, selector) {
   return miss;
 }
 
+function normalHit3Score(number, draws) {
+  const sample = draws.slice(0, NORMAL_HIT3_MODEL.limit);
+  const normalCount = (limit) => sample.slice(0, limit).filter((draw) => draw.normal.includes(number)).length;
+  const weightedCount = (decay) => sample.reduce(
+    (sum, draw, index) => sum + (draw.normal.includes(number) ? Math.exp(-index / decay) : 0),
+    0,
+  );
+  const previousAny = sample[0]?.normal.includes(number) || sample[0]?.special === number ? 1 : 0;
+  const weights = NORMAL_HIT3_MODEL.weights;
+  return (
+    normalCount(10) * weights.rc10 +
+    normalCount(30) * weights.rc30 +
+    normalCount(50) * weights.rc50 +
+    normalCount(80) * weights.rc80 +
+    weightedCount(15) * weights.wm15 +
+    weightedCount(30) * weights.wm30 +
+    weightedCount(50) * weights.wm50 +
+    weightedCount(80) * weights.wm80 +
+    previousAny * weights.prevAny
+  );
+}
+
+function rankNormalHit3Picks(draws, meta, normalHits = makeCounter(NUMBERS), simulations = 1) {
+  return NUMBERS.map((number) => ({
+    number,
+    hits: normalHits[number] || 0,
+    probability: (normalHits[number] || 0) / Math.max(1, simulations),
+    modelScore: normalHit3Score(number, draws),
+    wave: meta[number]?.wave || "",
+    zodiac: meta[number]?.zodiac || "",
+    size: isBig(number),
+  }))
+    .sort((a, b) => b.modelScore - a.modelScore || b.probability - a.probability || a.number - b.number)
+    .slice(0, 5);
+}
+
+function rankStatisticalZodiacs() {
+  const scores = {};
+  (state.analysis?.weightedNormalNumbers || []).forEach((item) => {
+    if (!item.zodiac) return;
+    scores[item.zodiac] = (scores[item.zodiac] || 0) + item.weight;
+  });
+  return Object.entries(scores)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([zodiac]) => zodiac);
+}
+
 function weightedPick(items) {
   const total = items.reduce((sum, item) => sum + item.weight, 0);
   let target = Math.random() * total;
@@ -581,18 +644,34 @@ function runMonteCarlo(simulations) {
     };
   });
 
+  const normalHit3Picks = rankNormalHit3Picks(state.draws, state.analysis.numberMeta, normalNumberHits, simulations);
+
   return {
     simulations,
     specialPicks: specialPicks.slice(0, 10),
     special20Picks: specialPicks.slice(0, 20).sort((a, b) => a.number - b.number),
     zodiacPicks: normalRecommendations,
     topZodiac: normalRecommendations[0],
+    normalHit3Picks,
     generatedAt: new Date(),
   };
 }
 
 function percent(value) {
   return `${(value * 100).toFixed(2)}%`;
+}
+
+function renderInlineBalls(picks) {
+  return picks
+    .map((item) => `<span class="mini-ball ${waveClass(item.wave)}">${formatNumber(item.number)}</span>`)
+    .join("");
+}
+
+function renderSummaryMysticNormal() {
+  if (!state.mysticPrediction?.normalPicks?.length) {
+    return '<strong class="summary-pending">暂未预测</strong>';
+  }
+  return `<div class="summary-ball-row">${renderInlineBalls(state.mysticPrediction.normalPicks)}</div>`;
 }
 
 function renderPrediction() {
@@ -603,7 +682,8 @@ function renderPrediction() {
   }
 
   const topSpecial = prediction.specialPicks[0];
-  const zodiacNames = prediction.zodiacPicks.map((item) => item.zodiac).join("、");
+  const normalHit3Balls = renderInlineBalls(prediction.normalHit3Picks);
+  const mysticNormalSummary = renderSummaryMysticNormal();
   els.simulationCount.textContent = prediction.simulations.toLocaleString("zh-CN");
   els.predictionTime.textContent = prediction.generatedAt.toLocaleString("zh-CN", { hour12: false });
   els.simulationResult.innerHTML = `
@@ -613,14 +693,13 @@ function renderPrediction() {
       <small>${topSpecial.zodiac} / ${WAVE_LABELS[topSpecial.wave]} / 概率 ${percent(topSpecial.probability)}</small>
     </article>
     <article class="pick-card">
-      <span>最高生肖</span>
-      <strong>${prediction.topZodiac.zodiac}</strong>
-      <small>模拟概率 ${percent(prediction.topZodiac.probability)}</small>
+      <span>三中三推荐</span>
+      <div class="summary-ball-row">${normalHit3Balls}</div>
+      <small>近50期加权 + 组内冲三模型</small>
     </article>
     <article class="pick-card">
-      <span>五个生肖</span>
-      <strong>${zodiacNames}</strong>
-      <small>下方每个生肖已配一个平码</small>
+      <span>玄学平码推荐</span>
+      ${mysticNormalSummary}
     </article>
   `;
 
@@ -647,18 +726,18 @@ function renderPrediction() {
     .map((item) => `<span class="mini-ball ${waveClass(item.wave)}">${formatNumber(item.number)}</span>`)
     .join("");
 
-  els.zodiacRecommendations.innerHTML = prediction.zodiacPicks
+  els.zodiacRecommendations.innerHTML = prediction.normalHit3Picks
     .map(
       (item, index) => `
-        <article class="zodiac-card">
+        <article class="zodiac-card normal-hit3-card">
           <div>
-            <span>${index === 0 ? "最高概率" : `推荐 ${index + 1}`}</span>
-            <strong>${item.zodiac}</strong>
-            <small>模拟 ${item.hits.toLocaleString("zh-CN")} 次 / 概率 ${percent(item.probability)}</small>
+            <span>平码 ${index + 1}</span>
+            <strong><span class="ball ${waveClass(item.wave)}">${formatNumber(item.number)}</span></strong>
+            <small>${item.zodiac} / ${WAVE_LABELS[item.wave]} / ${item.size}</small>
           </div>
           <div class="zodiac-card-number">
-            <span class="ball ${waveClass(item.normalNumber?.wave)}">${formatNumber(item.normalNumber?.number || 0)}</span>
-            <small>平码 / ${item.normalNumber ? percent(item.normalNumber.probability) : "-"}</small>
+            <span class="score">#${index + 1}</span>
+            <small>模型分 ${item.modelScore.toFixed(2)} / 模拟 ${percent(item.probability)}</small>
           </div>
         </article>
       `,
@@ -675,8 +754,8 @@ function renderReview(review) {
 
   els.reviewTime.textContent = `${review.expect} / ${review.generatedAt}`;
   const specialClass = review.result.specialHit ? "hit" : "miss";
-  const zodiacClass = review.result.zodiacMatchedCount >= 3 ? "hit" : "miss";
-  const normalClass = review.result.normalNumberMatchedCount > 0 ? "hit" : "miss";
+  const normalHit3MatchedCount = review.result.normalHit3MatchedCount ?? review.result.normalNumberMatchedCount ?? 0;
+  const normalClass = normalHit3MatchedCount >= 3 ? "hit" : "miss";
   const actualBalls = review.actual.openCode
     .map((number, index) => {
       const separator = index === 6 ? '<span class="special-separator">+</span>' : "";
@@ -697,13 +776,21 @@ function renderReview(review) {
     .join("");
   const special20Display = special20Picks
     || '<small class="review-data-warning">缺少20码复盘数据，请先在本地更新历史库后重新上传。</small>';
-  const zodiacPicks = review.predicted.zodiacFive
+  const normalHit3Source = Array.isArray(review.predicted.normalHit3Five)
+    ? review.predicted.normalHit3Five
+    : (review.predicted.zodiacFive || []).map((pick) => ({
+      code: pick.normalNumber,
+      number: Number(pick.normalNumber),
+      zodiac: pick.zodiac,
+      wave: pick.wave,
+    }));
+  const normalHit3Picks = normalHit3Source
     .map((pick) => {
-      const zodiacHit = review.actual.normalZodiacs.includes(pick.zodiac);
-      const numberHit = review.actual.normalNumbers.includes(pick.normalNumber);
+      const code = pick.code || formatNumber(pick.number);
+      const numberHit = review.actual.normalNumbers.includes(code);
       return `
-        <span class="review-pair ${zodiacHit || numberHit ? "review-hit" : ""}">
-          <span class="mini-ball ${waveClass(pick.wave)}">${pick.normalNumber}</span>
+        <span class="review-pair ${numberHit ? "review-hit" : ""}">
+          <span class="mini-ball ${waveClass(pick.wave)}">${code}</span>
           <span class="review-zodiac-name">${pick.zodiac}</span>
         </span>
       `;
@@ -716,15 +803,10 @@ function renderReview(review) {
       <strong>${review.result.specialHit ? "命中" : "未中"}</strong>
       <small>实际特码 ${review.actual.special}</small>
     </article>
-    <article class="review-card ${zodiacClass}">
-      <span>生肖复盘</span>
-      <strong>${review.result.zodiacMatchedCount} / 5</strong>
-      <small>命中：${review.result.zodiacMatches.join("、") || "无"}</small>
-    </article>
     <article class="review-card ${normalClass}">
-      <span>平码复盘</span>
-      <strong>${review.result.normalNumberMatchedCount} 个</strong>
-      <small>命中：${review.result.normalNumberMatches.join("、") || "无"}</small>
+      <span>三中三推荐复盘</span>
+      <strong>${normalHit3MatchedCount} / 5</strong>
+      <small>命中：${(review.result.normalHit3Matches || review.result.normalNumberMatches || []).join("、") || "无"}</small>
     </article>
     <article class="review-card wide">
       <span>实际开奖号</span>
@@ -739,8 +821,8 @@ function renderReview(review) {
       <div class="draw-balls review-special-20">${special20Display}</div>
     </article>
     <article class="review-card wide">
-      <span>五肖推荐</span>
-      <div class="review-pairs">${zodiacPicks}</div>
+      <span>三中三推荐</span>
+      <div class="review-pairs">${normalHit3Picks}</div>
     </article>
   `;
 }
@@ -1071,7 +1153,9 @@ function runMysticPrediction() {
   }
   const simulations = Number(els.mysticSimInput.value) || 100000;
   const result = runMysticMonteCarlo(simulations, targetTime);
+  state.mysticPrediction = result;
   renderMysticPrediction(result);
+  if (state.prediction) renderPrediction();
 }
 
 function parseExternalNumbers(text) {
