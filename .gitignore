@@ -1,3 +1,5 @@
 server-*.log
 .DS_Store
 Thumbs.db
+.github-upload-token
+upload-config.local.json
