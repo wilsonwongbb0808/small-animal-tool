@@ -59,9 +59,10 @@ function Test-OnlineMarker {
 
   try {
     $cacheBust = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
-    $response = Invoke-WebRequest -UseBasicParsing -Uri "$Url`?v=$cacheBust" -TimeoutSec 20
-    $text = $response.Content
-    return ($text -like "*三中三推荐*" -and $text -like "*app.js*")
+    $base = $Url.TrimEnd("/")
+    $index = (Invoke-WebRequest -UseBasicParsing -Uri "$base/index.html?v=$cacheBust" -TimeoutSec 20).Content
+    $app = (Invoke-WebRequest -UseBasicParsing -Uri "$base/app.js?v=$cacheBust" -TimeoutSec 20).Content
+    return ($index -like "*三中三推荐*" -and $app -like "*暂未预测*")
   } catch {
     return $false
   }
