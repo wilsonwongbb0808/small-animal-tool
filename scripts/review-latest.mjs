@@ -1,10 +1,13 @@
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { createPredictionSnapshot, parseDraw, predictionForReview, sortDraws } from "./prediction-engine.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const historyFile = path.join(root, "data", "history.json");
 const reviewFile = path.join(root, "data", "latest-review.json");
+const reviewHistoryFile = path.join(root, "data", "review-history.json");
+const predictionFile = path.join(root, "data", "latest-prediction.json");
 const NUMBERS = Array.from({ length: 49 }, (_, index) => index + 1);
 const SPECIAL_MODEL = {
   limit: 120,
@@ -16,23 +19,20 @@ const ZODIAC_MODEL = {
   recentLimit: 50,
   weights: { frequency: 45, recent: 110, miss: 25, carry: 0 },
 };
-
-function parseDraw(raw) {
-  const numbers = raw.openCode.split(",").map(Number);
-  const waves = raw.wave.split(",");
-  const zodiacs = raw.zodiac.split(",");
-  return {
-    expect: raw.expect,
-    openTime: raw.openTime,
-    numbers,
-    normal: numbers.slice(0, 6),
-    special: numbers[6],
-    waves,
-    zodiacs,
-    specialWave: waves[6],
-    specialZodiac: zodiacs[6],
-  };
-}
+const NORMAL_HIT3_MODEL = {
+  limit: 120,
+  weights: {
+    rc10: -10.037,
+    rc30: -10.815,
+    rc50: 0.824,
+    rc80: 1.212,
+    wm15: -13.505,
+    wm30: -1.449,
+    wm50: 2.496,
+    wm80: 13.866,
+    prevAny: 6.36,
+  },
+};
 
 function formatNumber(value) {
   return String(value).padStart(2, "0");
@@ -151,28 +151,75 @@ function rankZodiac(train, meta) {
     .slice(0, 5);
 }
 
+function normalHit3Score(number, draws) {
+  const sample = draws.slice(0, NORMAL_HIT3_MODEL.limit);
+  const normalCount = (limit) => sample.slice(0, limit).filter((draw) => draw.normal.includes(number)).length;
+  const weightedCount = (decay) => sample.reduce(
+    (sum, draw, index) => sum + (draw.normal.includes(number) ? Math.exp(-index / decay) : 0),
+    0,
+  );
+  const previousAny = sample[0]?.normal.includes(number) || sample[0]?.special === number ? 1 : 0;
+  const weights = NORMAL_HIT3_MODEL.weights;
+  return (
+    normalCount(10) * weights.rc10 +
+    normalCount(30) * weights.rc30 +
+    normalCount(50) * weights.rc50 +
+    normalCount(80) * weights.rc80 +
+    weightedCount(15) * weights.wm15 +
+    weightedCount(30) * weights.wm30 +
+    weightedCount(50) * weights.wm50 +
+    weightedCount(80) * weights.wm80 +
+    previousAny * weights.prevAny
+  );
+}
+
+function rankNormalHit3(train, meta) {
+  return NUMBERS.map((number) => ({
+    number,
+    code: formatNumber(number),
+    score: Math.round(normalHit3Score(number, train) * 100) / 100,
+    zodiac: meta[number]?.zodiac || "",
+    wave: meta[number]?.wave || "",
+  }))
+    .sort((a, b) => b.score - a.score || a.number - b.number)
+    .slice(0, 5);
+}
+
 export async function createLatestReview() {
   const database = JSON.parse(await readFile(historyFile, "utf8"));
-  const draws = database.data.map(parseDraw).sort((a, b) => b.openTime.localeCompare(a.openTime));
+  const draws = sortDraws(database.data.map(parseDraw));
   const actual = draws[0];
   const train = draws.filter((draw) => draw.expect < actual.expect);
-  const meta = buildMeta(train);
-  const specialTop20 = rankSpecial(train, meta, 20);
-  const specialPicks = specialTop20.slice(0, 10);
-  const zodiacPicks = rankZodiac(train, meta);
+  let sealedPrediction = null;
+  let predictionSource = "sealed";
+  try {
+    sealedPrediction = JSON.parse(await readFile(predictionFile, "utf8"));
+  } catch {
+    predictionSource = "backfill-missing";
+  }
+  if (!sealedPrediction || String(sealedPrediction.targetExpect || "") !== String(actual.expect)) {
+    sealedPrediction = createPredictionSnapshot(train);
+    predictionSource = predictionSource === "sealed" ? "backfill-target-mismatch" : predictionSource;
+  }
+  const predicted = predictionForReview(sealedPrediction);
   const actualNormalZodiacs = actual.zodiacs.slice(0, 6);
   const actualNormalSet = new Set(actual.normal);
-  const specialHit = specialPicks.some((pick) => pick.number === actual.special);
-  const specialTop20Hit = specialTop20.some((pick) => pick.number === actual.special);
-  const zodiacMatches = zodiacPicks.filter((pick) => actualNormalZodiacs.includes(pick.zodiac)).map((pick) => pick.zodiac);
-  const normalNumberMatches = zodiacPicks
-    .filter((pick) => actualNormalSet.has(pick.normalNumber.number))
-    .map((pick) => pick.normalNumber.code);
+  const specialHit = predicted.specialTop10.some((pick) => pick.number === actual.special);
+  const specialTop20Hit = predicted.specialTop20.some((pick) => pick.number === actual.special);
+  const normalHit3Matches = predicted.normalHit3Five
+    .filter((pick) => actualNormalSet.has(pick.number))
+    .map((pick) => pick.code);
+  const mysticNormalMatches = predicted.mysticNormalFive
+    .filter((pick) => actualNormalSet.has(pick.number))
+    .map((pick) => pick.code);
 
   const review = {
     generatedAt: new Date().toLocaleString("zh-CN", { hour12: false }),
     expect: actual.expect,
     openTime: actual.openTime,
+    predictionSource,
+    predictedTargetExpect: sealedPrediction.targetExpect || "",
+    predictedGeneratedAt: sealedPrediction.generatedAt || "",
     actual: {
       openCode: actual.numbers.map(formatNumber),
       waves: actual.waves,
@@ -183,26 +230,37 @@ export async function createLatestReview() {
       specialWave: actual.specialWave,
     },
     predicted: {
-      specialTop10: specialPicks,
-      specialTop20: specialTop20.slice().sort((a, b) => a.number - b.number),
-      zodiacFive: zodiacPicks.map((pick) => ({
-        zodiac: pick.zodiac,
-        normalNumber: pick.normalNumber.code,
-        wave: pick.wave,
-        score: pick.score,
-      })),
+      specialTop10: predicted.specialTop10,
+      specialTop20: predicted.specialTop20.slice().sort((a, b) => a.number - b.number),
+      normalHit3Five: predicted.normalHit3Five,
+      mysticNormalFive: predicted.mysticNormalFive,
     },
     result: {
       specialHit,
       specialTop20Hit,
-      zodiacMatchedCount: zodiacMatches.length,
-      zodiacMatches,
-      normalNumberMatchedCount: normalNumberMatches.length,
-      normalNumberMatches,
+      normalHit3MatchedCount: normalHit3Matches.length,
+      normalHit3Matches,
+      mysticNormalMatchedCount: mysticNormalMatches.length,
+      mysticNormalMatches,
     },
   };
 
   await writeFile(reviewFile, `${JSON.stringify(review, null, 2)}\n`, "utf8");
+  let reviewHistory = [];
+  try {
+    const existing = JSON.parse(await readFile(reviewHistoryFile, "utf8"));
+    reviewHistory = Array.isArray(existing.reviews) ? existing.reviews : [];
+  } catch {
+    reviewHistory = [];
+  }
+  const nextReviews = [review, ...reviewHistory.filter((item) => String(item.expect) !== String(review.expect))]
+    .sort((a, b) => Number(b.expect || 0) - Number(a.expect || 0))
+    .slice(0, 20);
+  await writeFile(reviewHistoryFile, `${JSON.stringify({
+    generatedAt: new Date().toLocaleString("zh-CN", { hour12: false }),
+    count: nextReviews.length,
+    reviews: nextReviews,
+  }, null, 2)}\n`, "utf8");
   return review;
 }
 

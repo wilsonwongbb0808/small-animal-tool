@@ -2,6 +2,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createLatestReview } from "./review-latest.mjs";
+import { createLatestPrediction } from "./generate-prediction.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const dataFile = path.join(root, "data", "history.json");
@@ -82,6 +83,7 @@ export async function updateLatestHistory() {
 
   await writeFile(dataFile, JSON.stringify(nextDatabase), "utf8");
   const review = await createLatestReview();
+  const prediction = await createLatestPrediction();
 
   return {
     added,
@@ -90,6 +92,11 @@ export async function updateLatestHistory() {
     latest: data[0],
     lastUpdatedAt: nextDatabase.lastUpdatedAt,
     review: review.result,
+    prediction: {
+      targetExpect: prediction.targetExpect,
+      simulations: prediction.simulations,
+      generatedAt: prediction.generatedAt,
+    },
   };
 }
 

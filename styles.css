@@ -109,41 +109,10 @@ main {
   padding: 24px clamp(18px, 4vw, 56px) 42px;
 }
 
-.toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: end;
-  gap: 14px;
-  padding: 16px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  box-shadow: var(--shadow);
-}
-
-.toolbar-meta {
-  display: grid;
-  gap: 3px;
-  min-height: 40px;
-  align-content: center;
-  padding: 0 10px;
-  border-left: 1px solid var(--line);
-}
-
-.toolbar-meta span {
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.toolbar-meta strong {
-  font-size: 13px;
-  white-space: nowrap;
-}
-
 .page-tabs {
   display: flex;
   gap: 10px;
-  margin: 14px 0 0;
+  margin: 0;
 }
 
 .tab-button {
@@ -589,6 +558,91 @@ button:disabled {
 
 .history-analysis-summary .history-balls {
   padding: 0;
+}
+
+.history-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 14px;
+}
+
+.history-actions button {
+  min-height: 34px;
+  padding: 0 14px;
+}
+
+.history-actions span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.history-review-panel {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.history-review-empty,
+.history-review-item {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-strong);
+}
+
+.history-review-empty {
+  padding: 12px;
+  color: var(--muted);
+}
+
+.history-review-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.history-review-summary::-webkit-details-marker {
+  display: none;
+}
+
+.history-review-summary strong {
+  display: block;
+  font-size: 16px;
+}
+
+.history-review-summary span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.history-review-result-tags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.history-review-detail {
+  display: grid;
+  gap: 10px;
+  padding: 0 12px 12px;
+}
+
+.history-review-row {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.history-review-row > span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
 }
 
 .history-set-reason {

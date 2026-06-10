@@ -20,18 +20,6 @@
     </header>
 
     <main>
-      <section class="toolbar" aria-label="预测控制">
-        <label>
-          模拟次数
-          <input id="simulationInput" type="number" min="1000" max="200000" step="1000" value="100000" />
-        </label>
-        <button id="predictBtn" type="button">开始预测</button>
-        <div class="toolbar-meta">
-          <span>最后更新</span>
-          <strong id="lastUpdatedAt">-</strong>
-        </div>
-      </section>
-
       <nav class="page-tabs" aria-label="功能页面">
         <button class="tab-button active" type="button" data-page="statsPage">统计预测</button>
         <button class="tab-button" type="button" data-page="mysticPage">玄学预测</button>
@@ -104,6 +92,11 @@
               <h2>历史开奖</h2>
               <span>显示最近 20 期，点击号码查看生肖</span>
             </div>
+            <div class="history-actions">
+              <button id="historyReviewToggle" type="button">查看历史复盘</button>
+              <span id="historyReviewMeta">最近 20 期</span>
+            </div>
+            <div id="historyReviewPanel" class="history-review-panel" hidden></div>
             <div class="table-wrap">
               <table>
                 <thead>

@@ -60,7 +60,7 @@ function Test-OnlineFiles {
   try {
     $cacheBust = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
     $base = $Url.TrimEnd("/")
-    $checkFiles = @("index.html", "app.js", "styles.css", "data/latest-review.json")
+    $checkFiles = @("index.html", "app.js", "styles.css", "data/latest-review.json", "data/latest-prediction.json", "data/review-history.json")
     foreach ($file in $checkFiles) {
       $tmp = Join-Path ([IO.Path]::GetTempPath()) ("gh-pages-check-" + [guid]::NewGuid().ToString("N") + ".tmp")
       Invoke-WebRequest -UseBasicParsing -Uri "$base/$($file)?v=$cacheBust" -OutFile $tmp -TimeoutSec 30
@@ -91,6 +91,12 @@ $files = @(
   "README.md",
   "data/history.json",
   "data/latest-review.json",
+  "data/latest-prediction.json",
+  "data/review-history.json",
+  "scripts/prediction-engine.mjs",
+  "scripts/generate-prediction.mjs",
+  "scripts/review-latest.mjs",
+  "scripts/update-latest.mjs",
   "scripts/upload-github-pages.ps1",
   "upload-to-github.bat"
 )

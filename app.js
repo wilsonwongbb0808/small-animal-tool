@@ -51,6 +51,9 @@ const els = {
   special20Recommendations: document.querySelector("#special20Recommendations"),
   zodiacRecommendations: document.querySelector("#zodiacRecommendations"),
   recentRows: document.querySelector("#recentRows"),
+  historyReviewToggle: document.querySelector("#historyReviewToggle"),
+  historyReviewPanel: document.querySelector("#historyReviewPanel"),
+  historyReviewMeta: document.querySelector("#historyReviewMeta"),
   tabButtons: document.querySelectorAll(".tab-button"),
   pageSections: document.querySelectorAll(".page-section"),
   mysticTargetTime: document.querySelector("#mysticTargetTime"),
@@ -372,6 +375,18 @@ async function fetchReview() {
   return response.json();
 }
 
+async function fetchPrediction() {
+  const response = await fetch("data/latest-prediction.json", { cache: "no-store" });
+  if (!response.ok) return null;
+  return response.json();
+}
+
+async function fetchReviewHistory() {
+  const response = await fetch("data/review-history.json", { cache: "no-store" });
+  if (!response.ok) return { reviews: [] };
+  return response.json();
+}
+
 function uniqueAndSort(draws) {
   const map = new Map();
   draws.forEach((draw) => {
@@ -677,7 +692,7 @@ function renderSummaryMysticNormal() {
 function renderPrediction() {
   const prediction = state.prediction;
   if (!prediction) {
-    els.simulationResult.innerHTML = '<article class="pick-card"><strong>点击“开始预测”</strong><small>运行蒙特卡洛模拟后会显示结果。</small></article>';
+    els.simulationResult.innerHTML = '<article class="pick-card"><strong>暂无固定预测</strong><small>更新最新期开奖后会自动生成固定预测。</small></article>';
     return;
   }
 
@@ -685,7 +700,7 @@ function renderPrediction() {
   const normalHit3Balls = renderInlineBalls(prediction.normalHit3Picks);
   const mysticNormalSummary = renderSummaryMysticNormal();
   els.simulationCount.textContent = prediction.simulations.toLocaleString("zh-CN");
-  els.predictionTime.textContent = prediction.generatedAt.toLocaleString("zh-CN", { hour12: false });
+  els.predictionTime.textContent = prediction.generatedAt?.toLocaleString?.("zh-CN", { hour12: false }) || prediction.generatedAt || "-";
   els.simulationResult.innerHTML = `
     <article class="pick-card special-pick">
       <span>最高特码</span>
@@ -796,6 +811,21 @@ function renderReview(review) {
       `;
     })
     .join("");
+  const mysticNormalSource = Array.isArray(review.predicted.mysticNormalFive) ? review.predicted.mysticNormalFive : [];
+  const mysticNormalMatchedCount = review.result.mysticNormalMatchedCount ?? 0;
+  const mysticClass = mysticNormalMatchedCount >= 3 ? "hit" : "miss";
+  const mysticNormalPicks = mysticNormalSource
+    .map((pick) => {
+      const code = pick.code || formatNumber(pick.number);
+      const numberHit = review.actual.normalNumbers.includes(code);
+      return `
+        <span class="review-pair ${numberHit ? "review-hit" : ""}">
+          <span class="mini-ball ${waveClass(pick.wave)}">${code}</span>
+          <span class="review-zodiac-name">${pick.zodiac}</span>
+        </span>
+      `;
+    })
+    .join("");
 
   els.reviewPanel.innerHTML = `
     <article class="review-card ${specialClass}">
@@ -807,6 +837,11 @@ function renderReview(review) {
       <span>三中三推荐复盘</span>
       <strong>${normalHit3MatchedCount} / 5</strong>
       <small>命中：${(review.result.normalHit3Matches || review.result.normalNumberMatches || []).join("、") || "无"}</small>
+    </article>
+    <article class="review-card ${mysticClass}">
+      <span>玄学平码复盘</span>
+      <strong>${mysticNormalMatchedCount} / 5</strong>
+      <small>命中：${(review.result.mysticNormalMatches || []).join("、") || "无"}</small>
     </article>
     <article class="review-card wide">
       <span>实际开奖号</span>
@@ -824,6 +859,10 @@ function renderReview(review) {
       <span>三中三推荐</span>
       <div class="review-pairs">${normalHit3Picks}</div>
     </article>
+    <article class="review-card wide">
+      <span>玄学平码推荐</span>
+      <div class="review-pairs">${mysticNormalPicks}</div>
+    </article>
   `;
 }
 
@@ -834,6 +873,94 @@ async function loadReview() {
   } catch {
     renderReview(null);
   }
+}
+
+function renderReviewBallList(picks = [], actual = {}, mode = "special") {
+  const special = actual.special;
+  const normalSet = new Set(actual.normalNumbers || []);
+  return picks
+    .map((pick) => {
+      const code = pick.code || formatNumber(pick.number);
+      const hit = mode === "special" ? code === special : normalSet.has(code);
+      return `<span class="mini-ball ${waveClass(pick.wave)} ${hit ? "review-hit" : ""}">${code}</span>`;
+    })
+    .join("");
+}
+
+function renderHistoryReviewPanel(payload) {
+  if (!els.historyReviewPanel || !els.historyReviewMeta) return;
+  const reviews = (payload?.reviews || []).slice(0, 20);
+  els.historyReviewMeta.textContent = reviews.length ? `已保存 ${reviews.length} 期复盘` : "暂无历史复盘";
+  if (!reviews.length) {
+    els.historyReviewPanel.innerHTML = '<article class="history-review-empty">暂无历史复盘，更新最新期开奖后会自动保存。</article>';
+    return;
+  }
+
+  els.historyReviewPanel.innerHTML = reviews
+    .map((review) => {
+      const actualBalls = (review.actual?.openCode || [])
+        .map((code, index) => {
+          const separator = index === 6 ? '<span class="special-separator">+</span>' : "";
+          return `${separator}<span class="mini-ball ${waveClass(review.actual?.waves?.[index])}">${code}</span>`;
+        })
+        .join("");
+      const specialHit = review.result?.specialHit;
+      const normalCount = review.result?.normalHit3MatchedCount ?? 0;
+      const mysticCount = review.result?.mysticNormalMatchedCount ?? 0;
+      return `
+        <details class="history-review-item">
+          <summary class="history-review-summary">
+            <div>
+              <strong>${review.expect}</strong>
+              <span>${review.openTime?.slice(0, 10) || ""}</span>
+            </div>
+            <div class="history-review-result-tags">
+              <span class="history-review-badge ${specialHit ? "hit" : "miss"}">特码${specialHit ? "命中" : "未中"}</span>
+              <span class="history-review-badge ${normalCount >= 3 ? "hit" : "miss"}">三中三 ${normalCount}/5</span>
+              <span class="history-review-badge ${mysticCount >= 3 ? "hit" : "miss"}">玄学 ${mysticCount}/5</span>
+            </div>
+          </summary>
+          <div class="history-review-detail">
+            <div class="history-review-row">
+              <span>开奖号</span>
+              <div class="draw-balls">${actualBalls}</div>
+            </div>
+            <div class="history-review-row">
+              <span>10码中特</span>
+              <div class="draw-balls">${renderReviewBallList(review.predicted?.specialTop10, review.actual, "special")}</div>
+            </div>
+            <div class="history-review-row">
+              <span>20码中特</span>
+              <div class="draw-balls">${renderReviewBallList(review.predicted?.specialTop20, review.actual, "special")}</div>
+            </div>
+            <div class="history-review-row">
+              <span>三中三推荐</span>
+              <div class="draw-balls">${renderReviewBallList(review.predicted?.normalHit3Five, review.actual, "normal")}</div>
+            </div>
+            <div class="history-review-row">
+              <span>玄学平码</span>
+              <div class="draw-balls">${renderReviewBallList(review.predicted?.mysticNormalFive, review.actual, "normal")}</div>
+            </div>
+          </div>
+        </details>
+      `;
+    })
+    .join("");
+}
+
+async function loadReviewHistory() {
+  try {
+    renderHistoryReviewPanel(await fetchReviewHistory());
+  } catch {
+    renderHistoryReviewPanel({ reviews: [] });
+  }
+}
+
+function toggleHistoryReviews() {
+  if (!els.historyReviewPanel || !els.historyReviewToggle) return;
+  const nextHidden = !els.historyReviewPanel.hidden;
+  els.historyReviewPanel.hidden = nextHidden;
+  els.historyReviewToggle.textContent = nextHidden ? "查看历史复盘" : "收起历史复盘";
 }
 
 function switchPage(pageId) {
@@ -1101,11 +1228,12 @@ function runMysticMonteCarlo(simulations, targetTime) {
 }
 
 function renderMysticPrediction(result) {
-  const targetDate = result.context.now.toLocaleDateString("zh-CN");
-  const runText = result.generatedAt.toLocaleString("zh-CN", { hour12: false });
+  const targetDate = result.context?.now?.toLocaleDateString?.("zh-CN") || result.context?.targetDate || "-";
+  const runText = result.generatedAt?.toLocaleString?.("zh-CN", { hour12: false }) || result.generatedAt || "-";
+  const hourLabel = result.context?.hourLabel ? `（${result.context.hourLabel}时）` : "";
   els.mysticTimeInfo.innerHTML = `
-    <strong>本次采用：${targetDate}，固定开奖时间 ${formatNumber(MYSTIC_DRAW_HOUR)}:${formatNumber(MYSTIC_DRAW_MINUTE)}（${result.context.hourLabel}时）</strong>
-    <span>目标期号 ${result.context.nextExpect} · 五肖重叠 ${result.statisticalZodiacs.join("、")} · 运行时间 ${runText}</span>
+    <strong>本次采用：${targetDate}，固定开奖时间 ${formatNumber(MYSTIC_DRAW_HOUR)}:${formatNumber(MYSTIC_DRAW_MINUTE)}${hourLabel}</strong>
+    <span>目标期号 ${result.context?.nextExpect || "-"} · 五肖重叠 ${result.statisticalZodiacs.join("、")} · 运行时间 ${runText}</span>
   `;
   const renderPicks = (picks, role) => picks.map((item, index) => `
       <article class="number-card mystic-card">
@@ -1143,6 +1271,11 @@ function renderMysticPrediction(result) {
 }
 
 function runMysticPrediction() {
+  if (state.mysticPrediction?.normalPicks?.length) {
+    renderMysticPrediction(state.mysticPrediction);
+    if (state.prediction) renderPrediction();
+    return;
+  }
   if (!state.draws.length) return;
   syncMysticTargetTime();
   const targetTime = parseMysticTargetDate(els.mysticTargetTime.value);
@@ -1673,7 +1806,9 @@ function renderBase() {
   const latest = state.draws[0];
   els.drawCount.textContent = state.draws.length;
   els.latestExpect.textContent = latest.expect;
-  els.lastUpdatedAt.textContent = state.databaseMeta?.lastUpdatedAt || state.databaseMeta?.generatedAt || "-";
+  if (els.lastUpdatedAt) {
+    els.lastUpdatedAt.textContent = state.databaseMeta?.lastUpdatedAt || state.databaseMeta?.generatedAt || "-";
+  }
   syncMysticTargetTime(true);
   renderRecent(state.draws);
 }
@@ -1685,46 +1820,62 @@ function setStatus(type, text) {
 
 function predict() {
   if (!state.analysis) return;
-  const simulations = Number(els.simulationInput.value);
-  els.predictBtn.disabled = true;
+  if (state.prediction) {
+    renderPrediction();
+    setStatus("ok", "已显示固定预测");
+    return;
+  }
+  const simulations = Number(els.simulationInput?.value) || 1000000;
+  if (els.predictBtn) els.predictBtn.disabled = true;
   setStatus("", "模拟中");
   window.setTimeout(() => {
     state.prediction = runMonteCarlo(simulations);
     renderPrediction();
     setStatus("ok", "预测完成");
-    els.predictBtn.disabled = false;
+    if (els.predictBtn) els.predictBtn.disabled = false;
   }, 20);
 }
 
 async function loadAndAnalyze(runDefaultPrediction = true) {
-  els.predictBtn.disabled = true;
+  if (els.predictBtn) els.predictBtn.disabled = true;
   setStatus("", "加载中");
   try {
     const draws = await fetchDraws();
     state.draws = uniqueAndSort(draws);
     state.analysis = analyze(state.draws);
+    const fixedPrediction = await fetchPrediction();
+    if (fixedPrediction) {
+      state.prediction = fixedPrediction;
+      state.mysticPrediction = fixedPrediction.mysticPrediction || null;
+      if (state.mysticPrediction) renderMysticPrediction(state.mysticPrediction);
+    }
     renderBase();
     renderExternalHistoryAnalysis();
     await loadReview();
+    await loadReviewHistory();
     setStatus("ok", "已读取本地库");
-    els.predictBtn.disabled = false;
-    if (runDefaultPrediction) predict();
+    if (els.predictBtn) els.predictBtn.disabled = false;
+    if (runDefaultPrediction) {
+      if (state.prediction) renderPrediction();
+      else predict();
+    }
   } catch (error) {
     console.error(error);
     setStatus("error", "读取失败");
     alert(error.message || "读取失败，请确认 data/history.json 已生成。");
   } finally {
-    els.predictBtn.disabled = false;
+    if (els.predictBtn) els.predictBtn.disabled = false;
   }
 }
 
-els.predictBtn.addEventListener("click", predict);
+els.predictBtn?.addEventListener("click", predict);
 els.tabButtons.forEach((button) => {
   button.addEventListener("click", () => switchPage(button.dataset.page));
 });
 els.mysticPredictBtn.addEventListener("click", runMysticPrediction);
 els.analyzeExternalBtn.addEventListener("click", analyzeExternalNumbers);
 els.saveExternalBtn.addEventListener("click", saveCurrentExternalNumbers);
+els.historyReviewToggle?.addEventListener("click", toggleHistoryReviews);
 els.externalUnlockBtn.addEventListener("click", unlockExternalPage);
 els.externalPasswordInput.addEventListener("keydown", (event) => {
   if (event.key === "Enter") unlockExternalPage();
