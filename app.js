@@ -324,7 +324,22 @@ function saveCurrentExternalNumbers() {
   );
   els.externalSaveStatus.textContent = result.message;
   els.externalSaveStatus.className = `save-status ${result.added ? "ok" : "warn"}`;
-  if (result.added) renderExternalHistoryAnalysis();
+  if (result.added) {
+    renderExternalHistoryAnalysis();
+    fetch("/api/external-learning", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        label: formatExternalDateLabel(),
+        expect: nextExternalExpect(),
+        numbers,
+        generated20: state.externalAnalysis.generatedNumbers,
+        generated10: state.externalAnalysis.recommendation10,
+        generated5: state.externalAnalysis.recommendation5,
+        createdAt: new Date().toLocaleString("zh-CN", { hour12: false }),
+      }),
+    }).catch(() => {});
+  }
 }
 
 function formatNumber(value) {

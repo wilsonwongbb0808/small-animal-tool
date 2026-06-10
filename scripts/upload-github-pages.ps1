@@ -90,6 +90,7 @@ $files = @(
   "styles.css",
   "README.md",
   "data/history.json",
+  "data/external-learning.json",
   "data/latest-review.json",
   "data/latest-prediction.json",
   "data/review-history.json",

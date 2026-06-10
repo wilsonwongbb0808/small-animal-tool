@@ -6,11 +6,17 @@ import { createPredictionSnapshot, DEFAULT_SIMULATIONS, parseDraw, sortDraws } f
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const historyFile = path.join(root, "data", "history.json");
 const predictionFile = path.join(root, "data", "latest-prediction.json");
+const externalLearningFile = path.join(root, "data", "external-learning.json");
 
 export async function createLatestPrediction(simulations = DEFAULT_SIMULATIONS) {
-  const database = JSON.parse(await readFile(historyFile, "utf8"));
+  const [databaseText, externalLearningText] = await Promise.all([
+    readFile(historyFile, "utf8"),
+    readFile(externalLearningFile, "utf8").catch(() => '{"records":[]}'),
+  ]);
+  const database = JSON.parse(databaseText);
+  const externalLearning = JSON.parse(externalLearningText);
   const draws = sortDraws(database.data.map(parseDraw));
-  const prediction = createPredictionSnapshot(draws, simulations);
+  const prediction = createPredictionSnapshot(draws, simulations, externalLearning.records || []);
   await writeFile(predictionFile, `${JSON.stringify(prediction, null, 2)}\n`, "utf8");
   return prediction;
 }

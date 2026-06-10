@@ -8,6 +8,7 @@ const historyFile = path.join(root, "data", "history.json");
 const reviewFile = path.join(root, "data", "latest-review.json");
 const reviewHistoryFile = path.join(root, "data", "review-history.json");
 const predictionFile = path.join(root, "data", "latest-prediction.json");
+const externalLearningFile = path.join(root, "data", "external-learning.json");
 const NUMBERS = Array.from({ length: 49 }, (_, index) => index + 1);
 const SPECIAL_MODEL = {
   limit: 120,
@@ -213,7 +214,16 @@ export async function createLatestReview() {
     predictionSource = "backfill-missing";
   }
   if (!sealedPrediction || String(sealedPrediction.targetExpect || "") !== String(actual.expect)) {
-    sealedPrediction = createPredictionSnapshot(train);
+    let externalRecords = [];
+    try {
+      const externalLearning = JSON.parse(await readFile(externalLearningFile, "utf8"));
+      externalRecords = (externalLearning.records || []).filter(
+        (record) => !record.expect || Number(record.expect) <= Number(actual.expect),
+      );
+    } catch {
+      externalRecords = [];
+    }
+    sealedPrediction = createPredictionSnapshot(train, undefined, externalRecords);
     predictionSource = predictionSource === "sealed" ? "backfill-target-mismatch" : predictionSource;
   }
   const predicted = predictionForReview(sealedPrediction);

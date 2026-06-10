@@ -189,6 +189,146 @@ export function analyze(draws) {
   return { weightedNumbers, weightedNormalNumbers, numberMeta: meta, zodiacToNumbers };
 }
 
+function countBy(items, getter) {
+  return items.reduce((counts, item) => {
+    const key = getter(item);
+    counts[key] = (counts[key] || 0) + 1;
+    return counts;
+  }, {});
+}
+
+function averageProfiles(profiles, group) {
+  const totals = {};
+  profiles.forEach((profile) => {
+    Object.entries(profile[group]).forEach(([key, count]) => add(totals, key, count));
+  });
+  return Object.fromEntries(
+    Object.entries(totals).map(([key, total]) => [key, total / Math.max(1, profiles.length)]),
+  );
+}
+
+function mergeProfiles(current, learned, currentWeight = 0.55) {
+  const keys = new Set([...Object.keys(current), ...Object.keys(learned)]);
+  return Object.fromEntries([...keys].map((key) => [
+    key,
+    (current[key] || 0) * currentWeight + (learned[key] || 0) * (1 - currentWeight),
+  ]));
+}
+
+function normalizeExternalRecords(records) {
+  return (Array.isArray(records) ? records : [])
+    .map((record) => ({
+      ...record,
+      expect: String(record.expect || ""),
+      numbers: uniqueNumbers(record.numbers || []),
+      generated20: uniqueNumbers(record.generated20 || []),
+      generated10: uniqueNumbers(record.generated10 || []),
+      generated5: uniqueNumbers(record.generated5 || []),
+    }))
+    .filter((record) => record.numbers.length)
+    .sort((a, b) => Number(b.expect || 0) - Number(a.expect || 0));
+}
+
+function buildExternalSpecialModel(analysis, records) {
+  const normalizedRecords = normalizeExternalRecords(records);
+  if (!normalizedRecords.length) return null;
+
+  const baseRows = analysis.weightedNumbers
+    .slice()
+    .sort((a, b) => b.score - a.score || a.number - b.number)
+    .map((row, index) => ({ ...row, baseRank: index + 1 }));
+  const rankMap = new Map(baseRows.map((row) => [row.number, row.baseRank]));
+  const profiles = normalizedRecords.map((record) => {
+    const rows = record.numbers.map((number) => ({
+      number,
+      wave: analysis.numberMeta[number]?.wave || "unknown",
+      zodiac: analysis.numberMeta[number]?.zodiac || "unknown",
+      size: number >= 25 ? "big" : "small",
+      tail: number % 10,
+    }));
+    return {
+      wave: countBy(rows, (row) => row.wave),
+      zodiac: countBy(rows, (row) => row.zodiac),
+      size: countBy(rows, (row) => row.size),
+      tail: countBy(rows, (row) => row.tail),
+      top22: rows.filter((row) => (rankMap.get(row.number) || 99) <= 22).length,
+    };
+  });
+  const current = profiles[0];
+  const average = {
+    wave: averageProfiles(profiles, "wave"),
+    zodiac: averageProfiles(profiles, "zodiac"),
+    size: averageProfiles(profiles, "size"),
+    tail: averageProfiles(profiles, "tail"),
+  };
+  const target = {
+    wave: mergeProfiles(current.wave, average.wave),
+    zodiac: mergeProfiles(current.zodiac, average.zodiac),
+    size: mergeProfiles(current.size, average.size),
+    tail: mergeProfiles(current.tail, average.tail),
+  };
+  const averageTop22 = profiles.reduce((sum, profile) => sum + profile.top22, 0) / profiles.length;
+  const targetTop22 = Math.round(current.top22 * 0.6 + averageTop22 * 0.4);
+  const numberFrequency = {};
+  normalizedRecords.forEach((record) => record.numbers.forEach((number) => add(numberFrequency, number)));
+  const latestInputSet = new Set(normalizedRecords[0].numbers);
+  const latestGeneratedSet = new Set(normalizedRecords[0].generated20);
+  const selected = [];
+  const selectedNumbers = new Set();
+  const selectedProfile = { wave: {}, zodiac: {}, size: {}, tail: {} };
+
+  const need = (group, key) => Math.max(0, (target[group][key] || 0) - (selectedProfile[group][key] || 0));
+  while (selected.length < NUMBERS.length) {
+    const selectedTop22 = selected.filter((row) => row.baseRank <= 22).length;
+    let best = null;
+    let bestScore = -Infinity;
+    baseRows.forEach((row) => {
+      if (selectedNumbers.has(row.number)) return;
+      if (selected.length < 20) {
+        if (latestGeneratedSet.size >= 20 && !latestGeneratedSet.has(row.number)) return;
+        if (latestGeneratedSet.size < 20 && latestInputSet.has(row.number)) return;
+      }
+      const wave = row.wave || "unknown";
+      const zodiac = row.zodiac || "unknown";
+      const size = row.number >= 25 ? "big" : "small";
+      const tail = row.number % 10;
+      let score = row.score;
+      score += need("wave", wave) * 180;
+      score += need("zodiac", zodiac) * 120;
+      score += need("size", size) * 140;
+      score += need("tail", tail) * 40;
+      score += (numberFrequency[row.number] || 0) * 85;
+      if (selectedTop22 < targetTop22 && row.baseRank <= 22) score += 260;
+      score -= row.baseRank * 2;
+      if (score > bestScore) {
+        best = row;
+        bestScore = score;
+      }
+    });
+    if (!best) break;
+    const modelRank = selected.length + 1;
+    const item = {
+      ...best,
+      modelRank,
+      externalScore: Math.round(bestScore * 100) / 100,
+      sampleFrequency: numberFrequency[best.number] || 0,
+      weight: Math.pow(1.06, NUMBERS.length - modelRank) * 100,
+    };
+    selected.push(item);
+    selectedNumbers.add(best.number);
+    add(selectedProfile.wave, best.wave || "unknown");
+    add(selectedProfile.zodiac, best.zodiac || "unknown");
+    add(selectedProfile.size, best.number >= 25 ? "big" : "small");
+    add(selectedProfile.tail, best.number % 10);
+  }
+
+  return {
+    rows: selected,
+    sampleCount: normalizedRecords.length,
+    latestSampleExpect: normalizedRecords[0].expect,
+  };
+}
+
 function withMeta(number, meta, fields = {}) {
   return {
     number,
@@ -244,15 +384,17 @@ function getStatisticalZodiacs(analysis) {
     .map(([zodiac]) => zodiac);
 }
 
-export function runMonteCarlo(draws, simulations = DEFAULT_SIMULATIONS) {
+export function runMonteCarlo(draws, simulations = DEFAULT_SIMULATIONS, externalRecords = []) {
   const analysis = analyze(draws);
+  const externalModel = buildExternalSpecialModel(analysis, externalRecords);
+  const specialPool = externalModel?.rows || analysis.weightedNumbers;
   const rng = createRng(`${draws[0]?.expect || ""}|stat|${simulations}`);
   const numberHits = makeCounter();
   const normalNumberHits = makeCounter();
   const zodiacHits = {};
 
   for (let index = 0; index < simulations; index += 1) {
-    const picked = weightedPick(analysis.weightedNumbers, rng);
+    const picked = weightedPick(specialPool, rng);
     const normalPicked = weightedPick(analysis.weightedNormalNumbers, rng);
     add(numberHits, picked.number);
     add(normalNumberHits, normalPicked.number);
@@ -262,6 +404,8 @@ export function runMonteCarlo(draws, simulations = DEFAULT_SIMULATIONS) {
   const specialPicks = NUMBERS.map((number) => withMeta(number, analysis.numberMeta, {
     hits: numberHits[number],
     probability: numberHits[number] / simulations,
+    modelRank: externalModel?.rows.find((item) => item.number === number)?.modelRank,
+    sampleFrequency: externalModel?.rows.find((item) => item.number === number)?.sampleFrequency,
   })).sort((a, b) => b.hits - a.hits || a.number - b.number);
 
   const zodiacPicks = Object.entries(zodiacHits)
@@ -302,6 +446,17 @@ export function runMonteCarlo(draws, simulations = DEFAULT_SIMULATIONS) {
       }
       : null,
     normalHit3Picks: rankNormalHit3(draws, analysis.numberMeta, normalNumberHits, simulations),
+    specialModel: externalModel
+      ? {
+        name: "external-number-learning",
+        sampleCount: externalModel.sampleCount,
+        latestSampleExpect: externalModel.latestSampleExpect,
+      }
+      : {
+        name: "statistical-history",
+        sampleCount: 0,
+        latestSampleExpect: "",
+      },
     analysis,
   };
 }
@@ -408,9 +563,9 @@ export function runMysticMonteCarlo(draws, statistical, simulations = DEFAULT_SI
   };
 }
 
-export function createPredictionSnapshot(draws, simulations = DEFAULT_SIMULATIONS) {
+export function createPredictionSnapshot(draws, simulations = DEFAULT_SIMULATIONS, externalRecords = []) {
   const sorted = sortDraws(draws);
-  const statistical = runMonteCarlo(sorted, simulations);
+  const statistical = runMonteCarlo(sorted, simulations, externalRecords);
   const mystic = runMysticMonteCarlo(sorted, statistical, simulations);
   const latest = sorted[0];
   const targetExpect = String(Number(latest?.expect || 0) + 1);
