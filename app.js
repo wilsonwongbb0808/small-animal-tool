@@ -667,6 +667,13 @@ function runMonteCarlo(simulations) {
     special20Picks: specialPicks.slice(0, 20).sort((a, b) => a.number - b.number),
     zodiacPicks: normalRecommendations,
     topZodiac: normalRecommendations[0],
+    oneZodiacPick: normalRecommendations[0]
+      ? {
+        zodiac: normalRecommendations[0].zodiac,
+        hits: normalRecommendations[0].hits,
+        probability: normalRecommendations[0].probability,
+      }
+      : null,
     normalHit3Picks,
     generatedAt: new Date(),
   };
@@ -699,6 +706,7 @@ function renderPrediction() {
   const topSpecial = prediction.specialPicks[0];
   const normalHit3Balls = renderInlineBalls(prediction.normalHit3Picks);
   const mysticNormalSummary = renderSummaryMysticNormal();
+  const oneZodiac = prediction.oneZodiacPick?.zodiac || prediction.topZodiac?.zodiac || "-";
   els.simulationCount.textContent = prediction.simulations.toLocaleString("zh-CN");
   els.predictionTime.textContent = prediction.generatedAt?.toLocaleString?.("zh-CN", { hour12: false }) || prediction.generatedAt || "-";
   els.simulationResult.innerHTML = `
@@ -711,6 +719,10 @@ function renderPrediction() {
       <span>三中三推荐</span>
       <div class="summary-ball-row">${normalHit3Balls}</div>
       <small>近50期加权 + 组内冲三模型</small>
+    </article>
+    <article class="pick-card one-zodiac-pick">
+      <span>一肖推荐</span>
+      <strong>${oneZodiac}</strong>
     </article>
     <article class="pick-card">
       <span>玄学平码推荐</span>

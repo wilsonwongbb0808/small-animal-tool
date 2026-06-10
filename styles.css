@@ -278,7 +278,7 @@ button:disabled {
 .summary-picks,
 .zodiac-picks {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -814,6 +814,14 @@ button:disabled {
   color: var(--muted);
   font-size: 24px;
   text-align: center;
+}
+
+.one-zodiac-pick strong {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 44px;
+  font-size: 36px;
 }
 
 .zodiac-number-card h3 {

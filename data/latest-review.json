@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026/6/10 17:35:28",
+  "generatedAt": "2026/6/10 18:46:01",
   "expect": "2026160",
   "openTime": "2026-06-09 21:32:32",
   "predictionSource": "backfill-target-mismatch",
   "predictedTargetExpect": "2026160",
-  "predictedGeneratedAt": "2026/6/10 17:35:28",
+  "predictedGeneratedAt": "2026/6/10 18:46:01",
   "actual": {
     "openCode": [
       "08",

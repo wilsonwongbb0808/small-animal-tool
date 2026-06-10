@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026/6/10 17:31:20",
+  "generatedAt": "2026/6/10 20:05:23",
   "sourceLatestExpect": "2026160",
   "targetExpect": "2026161",
   "simulations": 1000000,
@@ -400,6 +400,11 @@
       "probability": 0.033834
     }
   },
+  "oneZodiacPick": {
+    "zodiac": "雞",
+    "hits": 104475,
+    "probability": 0.104475
+  },
   "normalHit3Picks": [
     {
       "number": 7,
@@ -755,7 +760,7 @@
       "牛"
     ],
     "simulations": 1000000,
-    "generatedAt": "2026/6/10 17:31:20",
+    "generatedAt": "2026/6/10 20:05:23",
     "context": {
       "nextExpect": 2026161,
       "targetDate": "2026-06-10"

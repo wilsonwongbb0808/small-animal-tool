@@ -294,6 +294,13 @@ export function runMonteCarlo(draws, simulations = DEFAULT_SIMULATIONS) {
     special20Picks: specialPicks.slice(0, 20).sort((a, b) => a.number - b.number),
     zodiacPicks: normalRecommendations,
     topZodiac: normalRecommendations[0],
+    oneZodiacPick: normalRecommendations[0]
+      ? {
+        zodiac: normalRecommendations[0].zodiac,
+        hits: normalRecommendations[0].hits,
+        probability: normalRecommendations[0].probability,
+      }
+      : null,
     normalHit3Picks: rankNormalHit3(draws, analysis.numberMeta, normalNumberHits, simulations),
     analysis,
   };
