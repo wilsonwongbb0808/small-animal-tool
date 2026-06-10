@@ -190,6 +190,21 @@ export async function createLatestReview() {
   const draws = sortDraws(database.data.map(parseDraw));
   const actual = draws[0];
   const train = draws.filter((draw) => draw.expect < actual.expect);
+  let reviewHistory = [];
+  try {
+    const existing = JSON.parse(await readFile(reviewHistoryFile, "utf8"));
+    reviewHistory = Array.isArray(existing.reviews) ? existing.reviews : [];
+  } catch {
+    reviewHistory = [];
+  }
+  const existingSealedReview = reviewHistory.find(
+    (item) => String(item.expect) === String(actual.expect) && item.predictionSource === "sealed",
+  );
+  if (existingSealedReview) {
+    await writeFile(reviewFile, `${JSON.stringify(existingSealedReview, null, 2)}\n`, "utf8");
+    return existingSealedReview;
+  }
+
   let sealedPrediction = null;
   let predictionSource = "sealed";
   try {
@@ -246,13 +261,6 @@ export async function createLatestReview() {
   };
 
   await writeFile(reviewFile, `${JSON.stringify(review, null, 2)}\n`, "utf8");
-  let reviewHistory = [];
-  try {
-    const existing = JSON.parse(await readFile(reviewHistoryFile, "utf8"));
-    reviewHistory = Array.isArray(existing.reviews) ? existing.reviews : [];
-  } catch {
-    reviewHistory = [];
-  }
   const nextReviews = [review, ...reviewHistory.filter((item) => String(item.expect) !== String(review.expect))]
     .sort((a, b) => Number(b.expect || 0) - Number(a.expect || 0))
     .slice(0, 20);
