@@ -1872,7 +1872,7 @@ els.predictBtn?.addEventListener("click", predict);
 els.tabButtons.forEach((button) => {
   button.addEventListener("click", () => switchPage(button.dataset.page));
 });
-els.mysticPredictBtn.addEventListener("click", runMysticPrediction);
+els.mysticPredictBtn?.addEventListener("click", runMysticPrediction);
 els.analyzeExternalBtn.addEventListener("click", analyzeExternalNumbers);
 els.saveExternalBtn.addEventListener("click", saveCurrentExternalNumbers);
 els.historyReviewToggle?.addEventListener("click", toggleHistoryReviews);
