@@ -308,6 +308,11 @@ function addExternalHistoryRecord(numbers, generated20 = [], generated10 = [], g
 
 function saveCurrentExternalNumbers() {
   const numbers = parseExternalNumbers(els.externalNumbersInput.value);
+  if (!numbers.length) {
+    els.externalSaveStatus.textContent = "没有输入号码时只展示已有模型推荐；保存训练样本需要先输入号码。";
+    els.externalSaveStatus.className = "save-status warn";
+    return;
+  }
   const currentKey = externalNumbersKey(numbers);
   const analyzedKey = externalNumbersKey(state.externalAnalysis?.numbers || []);
   if (!state.externalAnalysis || currentKey !== analyzedKey) {
@@ -1623,6 +1628,147 @@ function analyzeExternalNumbers() {
   renderExternalHistoryAnalysis();
 }
 
+function getStandaloneExternalRecommendation() {
+  const meta = state.analysis?.numberMeta || buildNumberMeta(state.draws);
+  const ranked10 = (state.prediction?.specialPicks || []).map((pick) => Number(pick.number)).filter(Boolean);
+  const ranked20 = (state.prediction?.special20Picks || []).map((pick) => Number(pick.number)).filter(Boolean);
+  const fallback = buildSpecialModelRows(state.draws).map((row) => row.number);
+  const recommendation10 = uniqueNumbers(ranked10.length ? ranked10 : fallback.slice(0, 10)).slice(0, 10);
+  const recommendation20 = uniqueNumbers(ranked20.length ? ranked20 : fallback.slice(0, 20)).slice(0, 20).sort((a, b) => a - b);
+  const recommendation5 = recommendation10.slice(0, 5);
+  const learning = buildExternalLearningProfile();
+  const recommendationRows = recommendation20.map((number) => ({
+    number,
+    wave: meta[number]?.wave || "unknown",
+    zodiac: meta[number]?.zodiac || "unknown",
+  }));
+  const waveText = sortedCountText(countValues(recommendationRows, (row) => row.wave), (key) => WAVE_LABELS[key] || "未知波色", 3);
+  const zodiacText = sortedCountText(countValues(recommendationRows, (row) => row.zodiac), (key) => key || "未知生肖", 5);
+  const stableText = learning.stableNumbers.slice(0, 8).map((item) => `${formatNumber(item.number)}(${item.count})`).join("、");
+  return {
+    numbers: recommendation20,
+    recommendation10,
+    recommendation5,
+    learning,
+    reason: `这组推荐不依赖当前输入框，而是直接使用已经训练好的号码分析学习模型。模型综合已保存的${learning.sampleCount}组样本、历史特码权重、近期开奖走势、波色生肖分布和尾数节奏；高频样本号包括${stableText || "暂无"}。本次20码波色分布为${waveText}，生肖分布为${zodiacText}。`,
+  };
+}
+
+function renderExternalModelRecommendation(modelResult) {
+  const meta = state.analysis?.numberMeta || buildNumberMeta(state.draws);
+  const learnedTopText = modelResult.learning.stableNumbers.slice(0, 10).map((item) => `${formatNumber(item.number)}(${item.count})`).join("、");
+  const learnedWaveText = sortedCountText(modelResult.learning.average.wave, (key) => WAVE_LABELS[key] || "未知波色", 3);
+  const learnedSizeText = `大号约${(modelResult.learning.average.size.big || 0).toFixed(1)}个，小号约${(modelResult.learning.average.size.small || 0).toFixed(1)}个`;
+  const renderBalls = (numbers) => numbers.map((number) => {
+    const metaRow = meta[number] || {};
+    return `<span class="mini-ball ${waveClass(metaRow.wave)}">${formatNumber(number)}</span>`;
+  }).join("");
+  return `
+    <article class="review-card wide external-learning-card">
+      <span>模型已学习样本</span>
+      <strong>${modelResult.learning.sampleCount} 组</strong>
+      <small>${learnedSizeText}；平均波色：${learnedWaveText}；高频习惯号：${learnedTopText || "暂无"}</small>
+    </article>
+    <section class="external-prediction-window">
+      <div class="external-prediction-tier">
+        <strong>20码推荐</strong>
+        <div class="draw-balls">${renderBalls(modelResult.numbers)}</div>
+      </div>
+      <div class="external-prediction-tier">
+        <strong>10码推荐</strong>
+        <div class="draw-balls">${renderBalls(modelResult.recommendation10)}</div>
+      </div>
+      <div class="external-prediction-tier">
+        <strong>5码推荐</strong>
+        <div class="draw-balls">${renderBalls(modelResult.recommendation5)}</div>
+      </div>
+      <p>${modelResult.reason}</p>
+    </section>
+  `;
+}
+
+function analyzeExternalNumbersV2() {
+  const numbers = parseExternalNumbers(els.externalNumbersInput.value);
+  const modelResult = getStandaloneExternalRecommendation();
+  state.externalAnalysis = {
+    numbers: [...numbers],
+    generatedNumbers: [...modelResult.numbers],
+    recommendation10: [...modelResult.recommendation10],
+    recommendation5: [...modelResult.recommendation5],
+    generatedReason: modelResult.reason,
+    analyzedAt: new Date().toISOString(),
+  };
+
+  if (!numbers.length) {
+    els.externalSummary.innerHTML = `
+      <article class="review-card wide">
+        <span>输入号码</span>
+        <strong>未输入</strong>
+        <small>直接按已训练模型推荐；输入号码只用于拆解原理和保存训练样本。</small>
+      </article>
+      ${renderExternalModelRecommendation(modelResult)}
+    `;
+    els.externalNumberAnalysis.innerHTML = "";
+    renderExternalHistoryAnalysis();
+    return;
+  }
+
+  const meta = state.analysis?.numberMeta || buildNumberMeta(state.draws);
+  const modelTop = [...(state.analysis?.weightedNumbers || [])].sort((a, b) => b.weight - a.weight).slice(0, 10).map((item) => item.number);
+  const waveCounts = {};
+  const zodiacCounts = {};
+  const tailCounts = {};
+  numbers.forEach((number) => {
+    addCount(waveCounts, WAVE_LABELS[meta[number]?.wave] || "未知");
+    addCount(zodiacCounts, meta[number]?.zodiac || "未知");
+    addCount(tailCounts, number % 10);
+  });
+  const rows = numbers.map((number) => {
+    const stats = specialStatsForNumber(number, state.draws);
+    const reasons = [];
+    if (stats.recent45 > 0) reasons.push(`近45期出过${stats.recent45}次`);
+    if (stats.count120 >= 3) reasons.push(`近120期偏热${stats.count120}次`);
+    if (stats.miss >= 20) reasons.push(`遗漏${stats.miss}期，可能被当作补位号`);
+    if (modelTop.includes(number)) reasons.push("与统计特码模型重合");
+    reasons.push(`${meta[number]?.zodiac || "未知生肖"} / ${WAVE_LABELS[meta[number]?.wave] || "未知波色"} / ${isBig(number)}`);
+    return {
+      number,
+      stats,
+      reasons,
+      wave: meta[number]?.wave || "",
+      zodiac: meta[number]?.zodiac || "",
+    };
+  });
+  const sortedWaves = Object.entries(waveCounts).sort((a, b) => b[1] - a[1]).map(([label, count]) => `${label}${count}`);
+  const sortedZodiacs = Object.entries(zodiacCounts).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([label, count]) => `${label}${count}`);
+  const sortedTails = Object.entries(tailCounts).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([label, count]) => `${label}尾${count}`);
+  els.externalSummary.innerHTML = `
+    <article class="review-card wide">
+      <span>输入号码</span>
+      <strong>${numbers.length} 个</strong>
+      <small>只拆解这组号码的选择原理；不会按当前输入临时生成推荐。</small>
+    </article>
+    <article class="review-card wide">
+      <span>可能的选择倾向</span>
+      <small>波色：${sortedWaves.join("、")}；生肖集中：${sortedZodiacs.join("、")}；尾数：${sortedTails.join("、")}</small>
+    </article>
+    ${renderExternalModelRecommendation(modelResult)}
+  `;
+  els.externalNumberAnalysis.innerHTML = rows
+    .map((row) => `
+      <article class="analysis-card">
+        <div class="number-head">
+          <span class="ball ${waveClass(row.wave)}">${formatNumber(row.number)}</span>
+          <span class="score">${row.zodiac}</span>
+        </div>
+        <p>${row.reasons.join("；")}</p>
+        <small>近365期特碼${row.stats.count365}次 / 遗漏${row.stats.miss}期</small>
+      </article>
+    `)
+    .join("");
+  renderExternalHistoryAnalysis();
+}
+
 function buildSpecialModelRows(draws) {
   const sample = draws.slice(0, SPECIAL_MODEL.limit);
   const recent = sample.slice(0, Math.min(SPECIAL_MODEL.recentLimit, sample.length));
@@ -1899,7 +2045,7 @@ els.tabButtons.forEach((button) => {
   button.addEventListener("click", () => switchPage(button.dataset.page));
 });
 els.mysticPredictBtn?.addEventListener("click", runMysticPrediction);
-els.analyzeExternalBtn.addEventListener("click", analyzeExternalNumbers);
+els.analyzeExternalBtn.addEventListener("click", analyzeExternalNumbersV2);
 els.saveExternalBtn.addEventListener("click", saveCurrentExternalNumbers);
 els.historyReviewToggle?.addEventListener("click", toggleHistoryReviews);
 els.externalUnlockBtn.addEventListener("click", unlockExternalPage);
