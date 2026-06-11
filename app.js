@@ -1428,7 +1428,6 @@ function buildMimicExternalSet(numbers, inputRows) {
   const mimicCount = 20;
   const modelRows = buildSpecialModelRows(state.draws);
   const rankedRows = modelRows.map((row, index) => ({ ...row, rank: index + 1 }));
-  const inputSet = new Set(numbers);
   const currentProfile = {
     wave: countValues(inputRows, (row) => row.wave || "unknown"),
     zodiac: countValues(inputRows, (row) => row.zodiac || "unknown"),
@@ -1464,12 +1463,12 @@ function buildMimicExternalSet(numbers, inputRows) {
     return Math.max(0, target - current);
   }
 
-  while (selected.length < Math.min(mimicCount, Math.max(0, rankedRows.length - inputSet.size))) {
+  while (selected.length < Math.min(mimicCount, rankedRows.length)) {
     let best = null;
     let bestScore = -Infinity;
     const selectedTop22 = selected.filter((row) => row.rank <= 22).length;
     rankedRows.forEach((row) => {
-      if (selectedSet.has(row.number) || inputSet.has(row.number)) return;
+      if (selectedSet.has(row.number)) return;
       const sizeKey = row.number >= 25 ? "big" : "small";
       const tailKey = row.number % 10;
       let score = row.score;

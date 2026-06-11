@@ -271,7 +271,6 @@ function buildExternalSpecialModel(analysis, records) {
   const targetTop22 = Math.round(current.top22 * 0.6 + averageTop22 * 0.4);
   const numberFrequency = {};
   normalizedRecords.forEach((record) => record.numbers.forEach((number) => add(numberFrequency, number)));
-  const latestInputSet = new Set(normalizedRecords[0].numbers);
   const latestGeneratedSet = new Set(normalizedRecords[0].generated20);
   const selected = [];
   const selectedNumbers = new Set();
@@ -286,7 +285,6 @@ function buildExternalSpecialModel(analysis, records) {
       if (selectedNumbers.has(row.number)) return;
       if (selected.length < 20) {
         if (latestGeneratedSet.size >= 20 && !latestGeneratedSet.has(row.number)) return;
-        if (latestGeneratedSet.size < 20 && latestInputSet.has(row.number)) return;
       }
       const wave = row.wave || "unknown";
       const zodiac = row.zodiac || "unknown";
