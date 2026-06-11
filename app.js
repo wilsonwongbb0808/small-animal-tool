@@ -1511,7 +1511,7 @@ function buildMimicExternalSet(numbers, inputRows) {
     recommendation10,
     recommendation5,
     learning,
-    reason: `这次不是只照抄当前一组，而是把已保存的${learning.sampleCount}组历史样本一起学习。当前输入是${numbers.length}个号码，结构是：${sizeText}，波色偏向${sourceWaveText}，生肖集中在${sourceZodiacText}；历史样本里反复出现的核心号码有${stableText || "暂无"}。仿照时我把“当前输入结构”和“历史习惯画像”合并，优先保留模型Top22、常出现号码、大小比例、波色生肖分布和尾数节奏，最终生成20码；这20码里有${finalTop22}个号码位于模型Top22，波色分布为${finalWaveText}，生肖分布为${finalZodiacText}。`,
+    reason: `这次不是只照抄当前一组，而是把已保存的${learning.sampleCount}组历史样本一起学习。当前输入是${numbers.length}个号码，结构是：${sizeText}，波色偏向${sourceWaveText}，生肖集中在${sourceZodiacText}；历史样本里反复出现的核心号码有${stableText || "暂无"}。仿照时我把“当前输入结构”和“历史习惯画像”合并，优先参考模型Top22、常出现号码、大小比例、波色生肖分布和尾数节奏，最终生成20码；输入号码不会被强制排除，也不会被强制保留。这20码里有${finalTop22}个号码位于模型Top22，波色分布为${finalWaveText}，生肖分布为${finalZodiacText}。`,
   };
 }
 
