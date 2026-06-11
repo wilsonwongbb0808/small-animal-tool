@@ -159,6 +159,7 @@ async function unlockExternalPage() {
     return;
   }
   setExternalAccess(true);
+  analyzeExternalNumbersV2();
 }
 
 function externalHistoryKey(record) {
