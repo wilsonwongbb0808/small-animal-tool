@@ -1,48 +1,48 @@
 {
-  "generatedAt": "2026/6/11 21:44:00",
-  "expect": "2026162",
-  "openTime": "2026-06-11 21:32:32",
+  "generatedAt": "2026/6/12 21:40:10",
+  "expect": "2026163",
+  "openTime": "2026-06-12 21:32:32",
   "predictionSource": "sealed",
-  "predictedTargetExpect": "2026162",
-  "predictedGeneratedAt": "2026/6/11 20:30:25",
+  "predictedTargetExpect": "2026163",
+  "predictedGeneratedAt": "2026/6/11 21:44:01",
   "actual": {
     "openCode": [
-      "23",
-      "41",
-      "24",
-      "26",
+      "39",
+      "08",
+      "10",
       "33",
       "07",
-      "32"
+      "41",
+      "37"
     ],
     "waves": [
-      "red",
-      "blue",
+      "green",
       "red",
       "blue",
       "green",
       "red",
-      "green"
+      "blue",
+      "blue"
     ],
     "normalNumbers": [
-      "23",
-      "41",
-      "24",
-      "26",
+      "39",
+      "08",
+      "10",
       "33",
-      "07"
+      "07",
+      "41"
     ],
-    "special": "32",
+    "special": "37",
     "normalZodiacs": [
-      "猴",
-      "虎",
-      "羊",
-      "蛇",
+      "龍",
+      "豬",
+      "雞",
       "狗",
-      "鼠"
+      "鼠",
+      "虎"
     ],
-    "specialZodiac": "豬",
-    "specialWave": "green"
+    "specialZodiac": "馬",
+    "specialWave": "blue"
   },
   "predicted": {
     "specialTop10": [
@@ -52,8 +52,8 @@
         "wave": "green",
         "zodiac": "雞",
         "size": "小",
-        "hits": 60204,
-        "probability": 0.060204,
+        "hits": 60150,
+        "probability": 0.06015,
         "modelRank": 1,
         "sampleFrequency": 9
       },
@@ -63,8 +63,8 @@
         "wave": "blue",
         "zodiac": "蛇",
         "size": "小",
-        "hits": 56497,
-        "probability": 0.056497,
+        "hits": 56423,
+        "probability": 0.056423,
         "modelRank": 2,
         "sampleFrequency": 9
       },
@@ -74,8 +74,8 @@
         "wave": "blue",
         "zodiac": "蛇",
         "size": "大",
-        "hits": 53770,
-        "probability": 0.05377,
+        "hits": 53765,
+        "probability": 0.053765,
         "modelRank": 3,
         "sampleFrequency": 9
       },
@@ -85,8 +85,8 @@
         "wave": "red",
         "zodiac": "牛",
         "size": "大",
-        "hits": 50428,
-        "probability": 0.050428,
+        "hits": 50634,
+        "probability": 0.050634,
         "modelRank": 4,
         "sampleFrequency": 5
       },
@@ -96,8 +96,8 @@
         "wave": "green",
         "zodiac": "兔",
         "size": "小",
-        "hits": 47607,
-        "probability": 0.047607,
+        "hits": 47630,
+        "probability": 0.04763,
         "modelRank": 5,
         "sampleFrequency": 7
       },
@@ -107,8 +107,8 @@
         "wave": "red",
         "zodiac": "蛇",
         "size": "小",
-        "hits": 44648,
-        "probability": 0.044648,
+        "hits": 44741,
+        "probability": 0.044741,
         "modelRank": 6,
         "sampleFrequency": 6
       },
@@ -118,8 +118,8 @@
         "wave": "blue",
         "zodiac": "雞",
         "size": "小",
-        "hits": 42389,
-        "probability": 0.042389,
+        "hits": 42144,
+        "probability": 0.042144,
         "modelRank": 7,
         "sampleFrequency": 9
       },
@@ -129,8 +129,8 @@
         "wave": "green",
         "zodiac": "龍",
         "size": "大",
-        "hits": 39901,
-        "probability": 0.039901,
+        "hits": 39966,
+        "probability": 0.039966,
         "modelRank": 8,
         "sampleFrequency": 4
       },
@@ -140,8 +140,8 @@
         "wave": "red",
         "zodiac": "雞",
         "size": "大",
-        "hits": 37606,
-        "probability": 0.037606,
+        "hits": 37813,
+        "probability": 0.037813,
         "modelRank": 9,
         "sampleFrequency": 6
       },
@@ -151,8 +151,8 @@
         "wave": "blue",
         "zodiac": "豬",
         "size": "小",
-        "hits": 35448,
-        "probability": 0.035448,
+        "hits": 35508,
+        "probability": 0.035508,
         "modelRank": 10,
         "sampleFrequency": 7
       }
@@ -164,8 +164,8 @@
         "wave": "red",
         "zodiac": "蛇",
         "size": "小",
-        "hits": 44648,
-        "probability": 0.044648,
+        "hits": 44741,
+        "probability": 0.044741,
         "modelRank": 6,
         "sampleFrequency": 6
       },
@@ -175,8 +175,8 @@
         "wave": "blue",
         "zodiac": "雞",
         "size": "小",
-        "hits": 42389,
-        "probability": 0.042389,
+        "hits": 42144,
+        "probability": 0.042144,
         "modelRank": 7,
         "sampleFrequency": 9
       },
@@ -186,8 +186,8 @@
         "wave": "green",
         "zodiac": "猴",
         "size": "小",
-        "hits": 28175,
-        "probability": 0.028175,
+        "hits": 28077,
+        "probability": 0.028077,
         "modelRank": 14,
         "sampleFrequency": 5
       },
@@ -197,8 +197,8 @@
         "wave": "blue",
         "zodiac": "蛇",
         "size": "小",
-        "hits": 56497,
-        "probability": 0.056497,
+        "hits": 56423,
+        "probability": 0.056423,
         "modelRank": 2,
         "sampleFrequency": 9
       },
@@ -208,9 +208,9 @@
         "wave": "blue",
         "zodiac": "龍",
         "size": "小",
-        "hits": 22391,
-        "probability": 0.022391,
-        "modelRank": 18,
+        "hits": 25375,
+        "probability": 0.025375,
+        "modelRank": 16,
         "sampleFrequency": 4
       },
       {
@@ -219,8 +219,8 @@
         "wave": "green",
         "zodiac": "兔",
         "size": "小",
-        "hits": 47607,
-        "probability": 0.047607,
+        "hits": 47630,
+        "probability": 0.04763,
         "modelRank": 5,
         "sampleFrequency": 7
       },
@@ -230,9 +230,9 @@
         "wave": "red",
         "zodiac": "牛",
         "size": "小",
-        "hits": 23728,
-        "probability": 0.023728,
-        "modelRank": 17,
+        "hits": 20878,
+        "probability": 0.020878,
+        "modelRank": 19,
         "sampleFrequency": 5
       },
       {
@@ -241,8 +241,8 @@
         "wave": "blue",
         "zodiac": "豬",
         "size": "小",
-        "hits": 35448,
-        "probability": 0.035448,
+        "hits": 35508,
+        "probability": 0.035508,
         "modelRank": 10,
         "sampleFrequency": 7
       },
@@ -252,8 +252,8 @@
         "wave": "green",
         "zodiac": "雞",
         "size": "小",
-        "hits": 60204,
-        "probability": 0.060204,
+        "hits": 60150,
+        "probability": 0.06015,
         "modelRank": 1,
         "sampleFrequency": 9
       },
@@ -263,8 +263,8 @@
         "wave": "red",
         "zodiac": "羊",
         "size": "小",
-        "hits": 31415,
-        "probability": 0.031415,
+        "hits": 31808,
+        "probability": 0.031808,
         "modelRank": 12,
         "sampleFrequency": 4
       },
@@ -274,8 +274,8 @@
         "wave": "blue",
         "zodiac": "蛇",
         "size": "大",
-        "hits": 53770,
-        "probability": 0.05377,
+        "hits": 53765,
+        "probability": 0.053765,
         "modelRank": 3,
         "sampleFrequency": 9
       },
@@ -285,8 +285,8 @@
         "wave": "green",
         "zodiac": "兔",
         "size": "大",
-        "hits": 19518,
-        "probability": 0.019518,
+        "hits": 19669,
+        "probability": 0.019669,
         "modelRank": 20,
         "sampleFrequency": 7
       },
@@ -296,8 +296,8 @@
         "wave": "red",
         "zodiac": "牛",
         "size": "大",
-        "hits": 50428,
-        "probability": 0.050428,
+        "hits": 50634,
+        "probability": 0.050634,
         "modelRank": 4,
         "sampleFrequency": 5
       },
@@ -307,9 +307,9 @@
         "wave": "green",
         "zodiac": "豬",
         "size": "大",
-        "hits": 25086,
-        "probability": 0.025086,
-        "modelRank": 16,
+        "hits": 26598,
+        "probability": 0.026598,
+        "modelRank": 15,
         "sampleFrequency": 7
       },
       {
@@ -318,9 +318,9 @@
         "wave": "red",
         "zodiac": "雞",
         "size": "大",
-        "hits": 21013,
-        "probability": 0.021013,
-        "modelRank": 19,
+        "hits": 23578,
+        "probability": 0.023578,
+        "modelRank": 17,
         "sampleFrequency": 8
       },
       {
@@ -329,9 +329,9 @@
         "wave": "blue",
         "zodiac": "羊",
         "size": "大",
-        "hits": 26407,
-        "probability": 0.026407,
-        "modelRank": 15,
+        "hits": 22139,
+        "probability": 0.022139,
+        "modelRank": 18,
         "sampleFrequency": 6
       },
       {
@@ -340,8 +340,8 @@
         "wave": "green",
         "zodiac": "蛇",
         "size": "大",
-        "hits": 33283,
-        "probability": 0.033283,
+        "hits": 33593,
+        "probability": 0.033593,
         "modelRank": 11,
         "sampleFrequency": 9
       },
@@ -351,8 +351,8 @@
         "wave": "green",
         "zodiac": "龍",
         "size": "大",
-        "hits": 39901,
-        "probability": 0.039901,
+        "hits": 39966,
+        "probability": 0.039966,
         "modelRank": 8,
         "sampleFrequency": 4
       },
@@ -362,8 +362,8 @@
         "wave": "blue",
         "zodiac": "牛",
         "size": "大",
-        "hits": 30171,
-        "probability": 0.030171,
+        "hits": 30027,
+        "probability": 0.030027,
         "modelRank": 13,
         "sampleFrequency": 6
       },
@@ -373,42 +373,32 @@
         "wave": "red",
         "zodiac": "雞",
         "size": "大",
-        "hits": 37606,
-        "probability": 0.037606,
+        "hits": 37813,
+        "probability": 0.037813,
         "modelRank": 9,
         "sampleFrequency": 6
       }
     ],
     "normalHit3Five": [
       {
-        "number": 7,
-        "code": "07",
-        "wave": "red",
-        "zodiac": "鼠",
-        "size": "小",
-        "hits": 31156,
-        "probability": 0.031156,
-        "modelScore": 115.74
-      },
-      {
         "number": 25,
         "code": "25",
         "wave": "blue",
         "zodiac": "馬",
         "size": "大",
-        "hits": 30551,
-        "probability": 0.030551,
-        "modelScore": 107.48
+        "hits": 30496,
+        "probability": 0.030496,
+        "modelScore": 106.34
       },
       {
-        "number": 22,
-        "code": "22",
-        "wave": "green",
-        "zodiac": "雞",
+        "number": 7,
+        "code": "07",
+        "wave": "red",
+        "zodiac": "鼠",
         "size": "小",
-        "hits": 28843,
-        "probability": 0.028843,
-        "modelScore": 94.18
+        "hits": 26595,
+        "probability": 0.026595,
+        "modelScore": 103.16
       },
       {
         "number": 32,
@@ -416,19 +406,29 @@
         "wave": "green",
         "zodiac": "豬",
         "size": "大",
-        "hits": 24570,
-        "probability": 0.02457,
-        "modelScore": 92.85
+        "hits": 24416,
+        "probability": 0.024416,
+        "modelScore": 98.8
       },
       {
-        "number": 8,
-        "code": "08",
-        "wave": "red",
-        "zodiac": "豬",
+        "number": 22,
+        "code": "22",
+        "wave": "green",
+        "zodiac": "雞",
         "size": "小",
-        "hits": 15970,
-        "probability": 0.01597,
-        "modelScore": 89.89
+        "hits": 28984,
+        "probability": 0.028984,
+        "modelScore": 90.54
+      },
+      {
+        "number": 48,
+        "code": "48",
+        "wave": "blue",
+        "zodiac": "羊",
+        "size": "大",
+        "hits": 18906,
+        "probability": 0.018906,
+        "modelScore": 89.34
       }
     ],
     "mysticNormalFive": [
@@ -438,8 +438,8 @@
         "wave": "red",
         "zodiac": "雞",
         "size": "大",
-        "probability": 0.07077,
-        "score": 1.215,
+        "probability": 0.073345,
+        "score": 1.305,
         "methods": [
           "上期开奖共振"
         ]
@@ -450,12 +450,10 @@
         "wave": "red",
         "zodiac": "馬",
         "size": "小",
-        "probability": 0.070238,
-        "score": 6.54,
+        "probability": 0.066263,
+        "score": 3.34,
         "methods": [
           "生肖五行",
-          "波色五行",
-          "尾数法",
           "冷热重合"
         ]
       },
@@ -465,21 +463,23 @@
         "wave": "blue",
         "zodiac": "豬",
         "size": "小",
-        "probability": 0.058884,
-        "score": 0,
-        "methods": []
+        "probability": 0.066911,
+        "score": 3.3600000000000003,
+        "methods": [
+          "期号数秘",
+          "周易卦数"
+        ]
       },
       {
-        "number": 7,
-        "code": "07",
+        "number": 40,
+        "code": "40",
         "wave": "red",
-        "zodiac": "鼠",
-        "size": "小",
-        "probability": 0.063181,
-        "score": 3.3150000000000004,
+        "zodiac": "兔",
+        "size": "大",
+        "probability": 0.05665,
+        "score": 1.55,
         "methods": [
-          "波色五行",
-          "冷热重合"
+          "期号数秘"
         ]
       },
       {
@@ -488,26 +488,23 @@
         "wave": "red",
         "zodiac": "牛",
         "size": "小",
-        "probability": 0.05806,
-        "score": 4.2475000000000005,
+        "probability": 0.058264,
+        "score": 2.895,
         "methods": [
-          "波色五行",
           "日期数秘",
-          "尾数法"
+          "上期开奖共振"
         ]
       }
     ]
   },
   "result": {
     "specialHit": false,
-    "specialTop20Hit": true,
+    "specialTop20Hit": false,
     "normalHit3MatchedCount": 1,
     "normalHit3Matches": [
       "07"
     ],
-    "mysticNormalMatchedCount": 1,
-    "mysticNormalMatches": [
-      "07"
-    ]
+    "mysticNormalMatchedCount": 0,
+    "mysticNormalMatches": []
   }
 }
